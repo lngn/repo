@@ -7,7 +7,7 @@ namespace GrIso
         const int max_hash_check = 128 * 1024;
         public const ushort None = ushort.MaxValue;
 
-        ushort[] hash_list = new ushort[4];
+        ushort[] hash_list = new ushort[] { None, None, None, None };
         int list_size = 0;
         int hash_shift;
         uint hash_mul;
@@ -46,18 +46,39 @@ namespace GrIso
 
         bool DenseHash()
         {
+            if (list_size<2)
+            {
+                hash_mul = 0;
+                hash_add = 0;
+                this.hash_shift = 0;
+                return true;
+            }
+
             ushort max_num = 0;
             for (int i = 0; i < list_size; ++i)
                 if (hash_list[i] > max_num)
                     max_num = hash_list[i];
-            if (max_num >= 4 * list_size)
+
+            int hash_size = 1, hash_shift = 32;
+            while (hash_size < list_size)
+            {
+                hash_size <<= 1;
+                --hash_shift;
+            }
+            if (max_num >= hash_size)
+            {
+                hash_size <<= 1;
+                --hash_shift;
+            }
+
+            if (max_num >= hash_size)
                 return false;
              
-            hash_mul = 1;
+            hash_mul = 1u <<hash_shift;
             hash_add = 0;
-            hash_shift = 0;
+            this.hash_shift = hash_shift;
             var short_list = hash_list;
-            hash_list = new ushort[max_num + 1];
+            hash_list = new ushort[hash_size];
             for (int i = 0; i < hash_list.Length; ++i)
                 hash_list[i] = None;
 
@@ -76,9 +97,11 @@ namespace GrIso
 
             int hash_size = 1;
             while (hash_size < list_size)
+            {
                 hash_size <<= 1;
+            }
             hash_size <<= 1;
-
+            
             hash_shift = 32;
             uint shift_check = 1;
             while (shift_check != 0 && shift_check != hash_size)
@@ -88,7 +111,7 @@ namespace GrIso
             }
             if (shift_check == 0)
                 return false;
-
+            
             var short_list = hash_list;
             hash_list = new ushort[hash_size];
 
@@ -121,7 +144,7 @@ namespace GrIso
         public bool Find(ushort item)
         {
             int hash_index = (int)((item * hash_mul + hash_add) >> hash_shift);
-            return hash_index<hash_list.Length && item == hash_list[hash_index];
+            return item == hash_list[hash_index];
         }
     }
 }
