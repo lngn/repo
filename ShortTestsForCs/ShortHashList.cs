@@ -13,6 +13,30 @@ namespace GrIso
         uint hash_mul;
         uint hash_add;
 
+        public ShortHashList Clone()
+        {
+            var clone = new ShortHashList();
+            Clone(clone);
+            return clone;
+        }
+
+        public void Clone(ShortHashList clone)
+        {            
+            clone.list_size = list_size;
+            clone.hash_shift = hash_shift;
+            clone.hash_mul = hash_mul;
+            clone.hash_add = hash_add;
+            clone.hash_list = new ushort[hash_list.Length];
+            for (int i = 0; i < hash_list.Length; ++i)
+                clone.hash_list[i] = hash_list[i];
+            return clone;
+        }
+
+        public int Count()
+        {
+            return list_size;
+        }
+
         public void Append(ushort item)
         {
             if (list_size == hash_list.Length)

@@ -10,7 +10,16 @@ namespace GrIso
         public AbortException(string message) : base(message) { }
     }
 
-    class GraphVertex : ShortHashList    {    }
+    class GraphVertex : ShortHashList   
+    {
+        public new GraphVertex Clone()
+        {
+            var clone = new GraphVertex();
+            base.Clone(clone);
+            return clone;
+        }
+    }
+
     class Graph: List<GraphVertex>    
     {    
         public Graph(int vertex_count)
@@ -31,6 +40,34 @@ namespace GrIso
                     return false;
             return true;
         }
+        public Graph Clone()
+        {
+            var clone = new Graph(Count);
+            for (int i = 0; i < Count; ++i)
+                clone[i] = this[i].Clone();
+            return clone;
+        }
+        public bool Find(ushort some_vertex, ushort other_vertex)
+        {
+            return this[some_vertex].Find(other_vertex);
+        }
+        public bool Compare(Graph graph)
+        {
+            if (Count != graph.Count)
+                return false;
+            for (int i = 0; i < Count; ++i)
+                if (graph[i].Count() != this[i].Count())
+                    return false;
+
+            for (ushort i1 = 0; i1 < Count; ++i1)
+                for (var i2 = this[i1].First(); i2 != GraphVertex.None; i2 = this[i1].Next(i2))
+                    if (!graph.Find(i1, i2))
+                        return false;
+
+                return true;
+        }
+        
+
     };
 
     class GraphFun
@@ -110,9 +147,9 @@ namespace GrIso
             return graph;
         }        
 
-        List<int> Permutate(int vertex_count)
+        List<ushort> Permutate(int vertex_count)
         {
-            var permutation = new List<int>(vertex_count);
+            var permutation = new List<ushort>(vertex_count);
             for (int i = 0; i < vertex_count; ++i)
                 permutation[i] = i;
             for (int repeat=2*vertex_count;repeat>0;--repeat)
@@ -121,15 +158,31 @@ namespace GrIso
                 int i2 = rand_quick.Next(0, vertex_count - 1);
                 int i3 = permutation[i1];
                 permutation[i1] = permutation[i2];
-                permutation[i2] = i3;
+                permutation[i2] = (ushort)i3;
             }
 
             return permutation;
         }
 
-        Graph Permutate(Graph graph)
+        public bool Compare(Graph some_graph, Graph other_graph, List<ushort> permutation)
         {
-            var permutaion = Permutate(graph.VertexCount);
+            if (some_graph.Count != other_graph.Count)
+                return false;
+            for (int i = 0; i < some_graph.Count; ++i)
+                if (some_graph[i].Count() != other_graph[i].Count())
+                    return false;
+
+            for (ushort i1 = 0; i1 < some_graph.Count; ++i1)
+                for (var i2 = some_graph[i1].First(); i2 != GraphVertex.None; i2 = some_graph[i1].Next(i2))
+                    if (!other_graph.Find(permutation[i1], permutation[i2]))
+                        return false;
+
+            return true;
+        }
+
+        public Graph Permutate(Graph some_graph, List<int> permutaion)
+        {
+            var perm_graph = new Graph(some_graph.Count);
         }
     }
 }
