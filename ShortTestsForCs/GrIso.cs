@@ -192,4 +192,89 @@ namespace GrIso
             return perm_graph;
         }
     }
+
+    class GraphIso
+    {
+        const int None = GraphVertex.None;
+        struct VertexData
+        {
+            public int match_vertex;
+            public int border_edges;
+        }
+        struct EdgeData
+        {
+            public int inside_vertex;
+            public int outside_vertex;
+            public int matched_vertex;
+        }
+        VertexData[] vertex_array;
+        EdgeData[] edge_stack;
+        int vertex_len;
+        int edge_top;
+        Graph some_graph;
+        Graph other_graph;
+
+        public List<int>TryIso(Graph some_graph, Graph other_graph)
+        {
+            
+        }
+
+        void NextSomeVertex()
+        {
+            int outside_vertex = -1;
+            int inside_vertex = -1;
+            int border_edges = 0;
+            for (int i = 0; i < vertex_len; ++i)
+                if (vertex_array[i].match_vertex == None && vertex_array[i].border_edges > border_edges)
+                    inside_vertex = i;
+
+            border_edges = some_graph.Count;
+            for (int i = some_graph[inside_vertex].First(); i != None; i = some_graph[inside_vertex].Next(i))
+                if (vertex_array[i].border_edges < border_edges)
+                    outside_vertex = i;
+
+            for (int i = some_graph[outside_vertex].First(); i != None; i = some_graph[outside_vertex].Next(i))
+                vertex_array[i].border_edges += vertex_array[i].match_vertex == None ? 1 : -1;
+
+            ++edge_top;
+            edge_stack[edge_top] = new EdgeData { outside_vertex = outside_vertex, inside_vertex = inside_vertex, matched_vertex = None };
+        }
+
+        bool TryIso()
+        {
+            while (true)
+            {
+                if (!NextSomeVertex())
+                    return true;
+
+                while (true)
+                {
+                    if (NextOtherVertex())
+                        return true;
+                    if (--edge_top == 0)
+                        return false;
+                }
+            }
+        }
+
+        bool NextOtherVertex()
+        {
+            var edge_data = edge_stack[edge_top];
+            while (true)
+            {
+                edge_data.matched_vertex = other_graph[vertex_array[edge_data.inside_vertex]].Next(edge_data.matched_vertex);
+                if (edge_data.matched_vertex == None)
+                    return false;
+
+                if (other_graph[edge_data.matched_vertex].Count != some_graph[edge_data.outside_vertex].Count)
+                    continue;
+
+                for (int i = some_graph[edge_data.outside_vertex].First(); i != None; i = some_graph[edge_data.outside_vertex].Next(i))
+                    if (vertex_array[i].match_vertex != None && !other_graph.Find(vertex_array[i].match_vertex, edge_data.matched_vertex))
+                        continue;
+
+                return true;
+            }
+        }
+    }
 }
