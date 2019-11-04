@@ -36,8 +36,10 @@ namespace GrIso
         public bool Hash()
         {
             for (int i = 0; i < Count; ++i)
+            {
                 if (!this[i].Hash())
                     return false;
+            }
             return true;
         }
         public Graph Clone()
@@ -150,7 +152,7 @@ namespace GrIso
         List<ushort> Permutate(int vertex_count)
         {
             var permutation = new List<ushort>(vertex_count);
-            for (int i = 0; i < vertex_count; ++i)
+            for (ushort i = 0; i < vertex_count; ++i)
                 permutation[i] = i;
             for (int repeat=2*vertex_count;repeat>0;--repeat)
             {
@@ -180,9 +182,14 @@ namespace GrIso
             return true;
         }
 
-        public Graph Permutate(Graph some_graph, List<int> permutaion)
+        public Graph Permutate(Graph some_graph, List<ushort> permutation)
         {
             var perm_graph = new Graph(some_graph.Count);
+            for (ushort i1 = 0; i1 < some_graph.Count; ++i1)
+                for (ushort i2 = some_graph[i1].First(); i2 != GraphVertex.None; i2 = some_graph[i1].Next(i2))
+                    if (permutation[i1] < permutation[i2])
+                        perm_graph.Append(permutation[i1], permutation[i2]);
+            return perm_graph;
         }
     }
 }

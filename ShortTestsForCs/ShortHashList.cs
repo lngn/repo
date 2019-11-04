@@ -1,4 +1,6 @@
 ﻿
+using System;
+
 namespace GrIso
 {
     class ShortHashList
@@ -29,7 +31,6 @@ namespace GrIso
             clone.hash_list = new ushort[hash_list.Length];
             for (int i = 0; i < hash_list.Length; ++i)
                 clone.hash_list[i] = hash_list[i];
-            return clone;
         }
 
         public int Count()
@@ -114,8 +115,19 @@ namespace GrIso
             
         }
 
+        private bool Duplicates()
+        {
+            Array.Sort(hash_list);
+            for (int i = 1; i < hash_list.Length; ++i)
+                if (hash_list[i - 1] == hash_list[i])
+                    return true;
+            return false;
+        }
+
         public bool Hash()
         {
+            if (Duplicates())
+                return false;
             if (DenseHash())
                 return true;
 
