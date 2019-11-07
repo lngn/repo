@@ -9,11 +9,11 @@ namespace GrIso
         const int max_hash_check = 128 * 1024;
         public const ushort None = ushort.MaxValue;
 
-        ushort[] hash_list = new ushort[] { None, None, None, None };
-        int list_size = 0;
-        int hash_shift;
-        uint hash_mul;
-        uint hash_add;
+        protected ushort[] hash_list = new ushort[] { None, None, None, None };
+        protected int list_size = 0;
+        protected int hash_shift;
+        protected uint hash_mul;
+        protected uint hash_add;
 
         public ShortHashList Clone()
         {
