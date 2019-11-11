@@ -60,7 +60,7 @@ namespace GrIso
             var permutation = new List<int>(vertex_len);
             for (int i = 0; i < vertex_len; ++i)
                 permutation.Add(vertex_array[i].match_vertex);
-            if (new GraphFun(0).Compare(some_graph, other_graph, permutation))
+            if (some_graph.Compare(other_graph, permutation))
                 throw new AbortException("This lies that it has found.");
             return permutation;
         }

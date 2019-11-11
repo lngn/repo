@@ -45,7 +45,11 @@ namespace GrIso
     }
 
     class Graph: List<GraphVertex>    
-    {    
+    {
+        static void Abort(string message) { throw new AbortException(message); }
+        static RandQuick rand_quick = RandQuick.Shared;
+        const int None = GraphVertex.None;
+
         public Graph(int vertex_count)
             :base(vertex_count)
         {
@@ -117,31 +121,20 @@ namespace GrIso
             }
             return sb.ToString();
         }
-    };
-
-    class GraphFun
-    {
-        static void Abort(string message) { throw new AbortException(message); }
-        RandQuick rand_quick;
-
-        public GraphFun(uint rand_seed)
-        {
-            rand_quick = new RandQuick(rand_seed);
-        }
 
         // Generate random connected graph.
-        public Graph Generate(int vertex_count, int edge_count)
+        public static Graph Generate(int vertex_count, int edge_count)
         {
             if (edge_count < vertex_count - 1)
                 Abort("too less edge - only connected graph");
-            if (edge_count >= vertex_count*( vertex_count - 1))
+            if (edge_count >= vertex_count * (vertex_count - 1))
                 Abort("too many edge - symetric graph");
 
             /* Explicite added and removed edges depending on bool flag. 
              * For dense graph filled only removed edges excepts those have been choosen to make connected graph. For not dense graph is simpler.
              * This gives 1/2 chance of add a random edge.
              */
-            var edges = new HashSet<(int, int,bool)>(); 
+            var edges = new HashSet<(int, int, bool)>();
 
             var graph = new Graph(vertex_count);
             //  make graph connected
@@ -150,10 +143,10 @@ namespace GrIso
             for (int i = 0; i < vertex_count; ++i)
                 permutation.Add(i);
             // append to connected subtree random edges
-            for (int i=1;i<vertex_count;++i)
+            for (int i = 1; i < vertex_count; ++i)
             {
                 // vertex in subtree
-                int i1 = rand_quick.Next(0, i-1);
+                int i1 = rand_quick.Next(0, i - 1);
                 // vertex not in subtree
                 int i2 = rand_quick.Next(i, vertex_count - 1);
                 // append new edge
@@ -168,20 +161,20 @@ namespace GrIso
                 permutation[i2] = i1;
             }
 
-            if (edge_count > vertex_count*(vertex_count-1)/4)
+            if (edge_count > vertex_count * (vertex_count - 1) / 4)
             {
-                for (int i = vertex_count - 1; i < vertex_count*(vertex_count-1)/2-edge_count;++i)
+                for (int i = vertex_count - 1; i < vertex_count * (vertex_count - 1) / 2 - edge_count; ++i)
                 {
                     int i1 = rand_quick.Next(0, vertex_count - 1);
                     int i2 = rand_quick.Next(0, vertex_count - 1);
                     if (i2 < i1) { int i3 = i1; i1 = i2; i2 = i3; }
-                    if (i1 != i2 && !edges.Contains((i1, i2, true)) && !edges.Contains((i1,i2 ,false)))
+                    if (i1 != i2 && !edges.Contains((i1, i2, true)) && !edges.Contains((i1, i2, false)))
                         edges.Add((i1, i2, false));
                 }
                 for (int i1 = 0; i1 < vertex_count; ++i1)
-                    for (int i2 = i1+1; i2 < vertex_count; ++i2)
-                        if (edges.Contains((i1, i2,true)) || !edges.Contains((i1, i2, false)))
-                            graph.Append((ushort)i1,(ushort) i2);
+                    for (int i2 = i1 + 1; i2 < vertex_count; ++i2)
+                        if (edges.Contains((i1, i2, true)) || !edges.Contains((i1, i2, false)))
+                            graph.Append((ushort)i1, (ushort)i2);
             }
             else
             {
@@ -189,26 +182,26 @@ namespace GrIso
                 {
                     int i1 = rand_quick.Next(0, vertex_count - 1);
                     int i2 = rand_quick.Next(0, vertex_count - 1);
-                    if (i2<i1)  { int i3 = i1;i1 = i2;i2 = i3; }
-                    if (i1 != i2 && !edges.Contains((i1,i2, true)))
+                    if (i2 < i1) { int i3 = i1; i1 = i2; i2 = i3; }
+                    if (i1 != i2 && !edges.Contains((i1, i2, true)))
                         edges.Add((i1, i2, true));
                 }
 
                 foreach (var edge in edges)
-                    graph.Append(edge.Item1, edge.Item2);                
+                    graph.Append(edge.Item1, edge.Item2);
             }
 
             if (!graph.Hash())
                 Abort("Cannot make short hash");
             return graph;
-        }        
+        }
 
-        public List<int> Permutate(int vertex_count)
+        public static List<int> Permutate(int vertex_count)
         {
             var permutation = new List<int>(vertex_count);
             for (int i = 0; i < vertex_count; ++i)
                 permutation.Add(i);
-            for (int repeat=2*vertex_count;repeat>0;--repeat)
+            for (int repeat = 2 * vertex_count; repeat > 0; --repeat)
             {
                 int i1 = rand_quick.Next(0, vertex_count - 1);
                 int i2 = rand_quick.Next(0, vertex_count - 1);
@@ -220,32 +213,39 @@ namespace GrIso
             return permutation;
         }
 
-        public bool Compare(Graph some_graph, Graph other_graph, List<int> permutation)
+        public bool Compare(Graph graph, List<int> permutation)
         {
-            if (some_graph.Count != other_graph.Count)
+            if (Count != graph.Count)
                 return false;
-            for (int i = 0; i < some_graph.Count; ++i)
-                if (some_graph[i].Count() != other_graph[permutation[i]].Count())
+            for (int i = 0; i < Count; ++i)
+                if (this[i].Count() != graph[permutation[i]].Count())
                     return false;
 
-            for (int i1 = 0; i1 < some_graph.Count; ++i1)
-                for (int i2 = some_graph[i1].First(); i2 != GraphVertex.None; i2 = some_graph[i1].Next(i2))
-                    if (!other_graph.Find(permutation[i1], permutation[i2]))
+            for (int i1 = 0; i1 < Count; ++i1)
+            {
+                var v = this[i1];
+                for (int i2 = v.First(); i2 != None; i2 = v.Next(i2))
+                    if (!graph.Find(permutation[i1], permutation[i2]))
                         return false;
+            }
 
             return true;
         }
 
-        public Graph Permutate(Graph some_graph, List<int> permutation)
+        public Graph Permutate(List<int> permutation)
         {
-            var perm_graph = new Graph(some_graph.Count);
-            for (int i1 = 0; i1 < some_graph.Count; ++i1)
-                for (int i2 = some_graph[i1].First(); i2 != GraphVertex.None; i2 = some_graph[i1].Next(i2))
+            var graph = new Graph(Count);
+            for (int i1 = 0; i1 < Count; ++i1)
+            {
+                var v = this[i1];
+                for (int i2 = v.First(); i2 != None; i2 = v.Next(i2))
                     if (i1 < i2)
-                        perm_graph.Append(permutation[i1], permutation[i2]);
-            if (!perm_graph.Hash())
+                        graph.Append(permutation[i1], permutation[i2]);
+            }
+
+            if (!graph.Hash())
                 Abort("Cannot make short hash");
-            return perm_graph;
+            return graph;
         }
-    }
+    };
 }

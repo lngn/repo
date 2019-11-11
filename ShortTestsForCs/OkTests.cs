@@ -7,8 +7,7 @@ namespace GrIso
     class OkTests
     {
         RandQuick rand_quick;
-        GraphFun graph_fun;
-
+        
         void Assert(bool b)
         {
             if (!b)
@@ -20,7 +19,6 @@ namespace GrIso
         public OkTests(uint rand_seed=1313)
         {
             rand_quick = new RandQuick(rand_seed);
-            graph_fun = new GraphFun(rand_seed);
         }
 
         public bool TestOneShortListCorrectness(int list_size, int item_size, uint seed_test = 0, uint seed_hash = 0)
@@ -134,17 +132,18 @@ namespace GrIso
 
         public void TestGraphCompare(int vertex_count, int edge_count)
         {
-            Graph graph = graph_fun.Generate(vertex_count, edge_count);
+            Graph graph = Graph.Generate(vertex_count, edge_count);
             Assert(graph.Compare(graph.Clone()));
-            Assert(!graph.Compare(graph_fun.Generate(vertex_count, edge_count)));
-            List<int> permutation = graph_fun.Permutate(vertex_count);
-            Graph perm = graph_fun.Permutate(graph, permutation);
+            Assert(!graph.Compare(Graph.Generate(vertex_count, edge_count)));
+            List<int> permutation = Graph.Permutate(vertex_count);
+            Graph perm = graph.Permutate( permutation);
             Assert(!graph.Compare(perm));
-            Assert(graph_fun.Compare(graph, perm,permutation));
+            Assert(graph.Compare(perm,permutation));
         }
 
         public void TestGraphCompare()
         {
+            for (int c=25;c>0;--c)
             for (int vertex_count = 8; vertex_count < 24; ++vertex_count)
                 for (int edge_count = vertex_count * (vertex_count - 1) / 8; edge_count < vertex_count * (vertex_count - 1) / 4; ++edge_count)
                     TestGraphCompare(vertex_count, edge_count);
@@ -152,11 +151,11 @@ namespace GrIso
 
         public void PrintRandGraphPermutation(int vertex_count, int edge_count)
         {
-            Graph graph = graph_fun.Generate(vertex_count, edge_count);
-            List<int> permutation = graph_fun.Permutate(vertex_count);
-            Graph perm = graph_fun.Permutate(graph, permutation);
+            Graph graph = Graph.Generate(vertex_count, edge_count);
+            List<int> permutation = Graph.Permutate(vertex_count);
+            Graph perm = graph.Permutate(permutation);
             Assert(!graph.Compare(perm));
-            Assert(graph_fun.Compare(graph, perm, permutation));
+            Assert(graph.Compare( perm, permutation));
             Debug.WriteLine(graph.ToString());
             Debug.WriteLine(perm.ToString());
         }
