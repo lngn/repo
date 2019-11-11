@@ -117,8 +117,8 @@ namespace GrIso
 
         private bool Duplicates()
         {
-            Array.Sort(hash_list);
-            for (int i = 1; i < hash_list.Length; ++i)
+            Array.Sort(hash_list, 0, list_size);
+            for (int i = 1; i < list_size; ++i)
                 if (hash_list[i - 1] == hash_list[i])
                     return true;
             return false;
