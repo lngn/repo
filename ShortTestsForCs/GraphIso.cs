@@ -25,7 +25,44 @@ namespace GrIso
 
         public List<int>TryIso(Graph some_graph, Graph other_graph)
         {
+            if (some_graph.Count != other_graph.Count)
+                return null;
+            for (int i = 0;i < some_graph.Count;++i)
+            if (some_graph[i].Count() != other_graph[i].Count())
+                return null;
+
+            this.some_graph = some_graph;
+            this.other_graph = other_graph;
+            vertex_array = new VertexData[some_graph.Count];
+            vertex_len = some_graph.Count;
+            edge_stack = new EdgeData[some_graph.Count];
+
+            int some_vertex = None, other_vertex = None, border_edges = 0;
+            for (int i = 0; i < some_graph.Count; ++i)
+                if (some_graph[i].Count() > border_edges)
+                {
+                    some_vertex = i;
+                    border_edges = some_graph[i].Count();
+                }
+            for (int i = 0; i < other_graph.Count; ++i)
+                if (other_graph[i].Count() == border_edges)
+                {
+                    other_vertex = i;
+                    if (TryIso(some_vertex, other_vertex))
+                        return GetIso();
+                }
+
             return null;
+        }
+
+        List<int> GetIso()
+        {
+            var permutation = new List<int>(vertex_len);
+            for (int i = 0; i < vertex_len; ++i)
+                permutation.Add(vertex_array[i].match_vertex);
+            if (new GraphFun(0).Compare(some_graph, other_graph, permutation))
+                throw new AbortException("This lies that it has found.");
+            return permutation;
         }
 
         // Select next outside vertex for partial graph
@@ -73,8 +110,24 @@ namespace GrIso
             return true;
         }
 
-        bool TryIso()
+        bool TryIso(int some_vertex, int other_vertex)
         {
+            // initiate vertex array
+            for (int i=0;i<vertex_len;++i)
+            {
+                vertex_array[i].match_vertex = None;
+                vertex_array[i].border_edges = some_graph.Find(some_vertex, i) ? 1 : 0;
+            }
+            vertex_array[some_vertex].match_vertex = other_vertex;
+            vertex_array[some_vertex].border_edges = some_graph[some_vertex].Count();
+
+            // initiate edge stack
+            edge_top = 0;
+            edge_stack[0].inside_vertex = some_vertex;
+            edge_stack[0].matched_vertex = other_vertex;
+            edge_stack[0].outside_vertex = None;
+
+            // try build iso
             while (true)
             {
                 if (!NextSomeVertex())
