@@ -159,5 +159,18 @@ namespace GrIso
             Debug.WriteLine(graph.ToString());
             Debug.WriteLine(perm.ToString());
         }
+
+        public void TestGraphIso(int vertex_count, int edge_count)
+        {
+            Graph graph = Graph.Generate(vertex_count, edge_count);
+            List<int> permutation = Graph.Permutate(vertex_count);
+            Graph perm = graph.Permutate(permutation);
+            Assert(!graph.Compare(perm));
+            Assert(graph.Compare(perm, permutation));
+            Debug.WriteLine(graph.ToString());
+            Debug.WriteLine(perm.ToString());
+            List<int> result = new GraphIso().TryIso(graph, perm);
+            Assert(graph.Compare(perm, result));
+        }
     }
 }
