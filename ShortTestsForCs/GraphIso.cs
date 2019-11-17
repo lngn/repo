@@ -58,7 +58,7 @@ namespace GrIso
             var permutation = new List<int>(vertex_len);
             for (int i = 0; i < vertex_len; ++i)
                 permutation.Add(vertex_array[i].other_vertex);
-            if (some_graph.Compare(other_graph, permutation))
+            if (!some_graph.Compare(other_graph, permutation))
                 throw new AbortException("This lies that it has found.");
             return permutation;
         }
@@ -161,19 +161,16 @@ namespace GrIso
             int inside_vertex = edge_stack[edge_top].inside_vertex;
             int outside_vertex = edge_stack[edge_top].outside_vertex;
 
+            edge_stack[edge_top].matched_vertex = None;
+            vertex_array[outside_vertex].other_vertex = None;
+            if (matched_vertex != None)
+                vertex_array[matched_vertex].some_vertex = None;
+
             while (true)
             {
                 // Next potential match
-                if (matched_vertex != None)
-                {
-                    vertex_array[matched_vertex].some_vertex = None;
-                    matched_vertex = other_graph[vertex_array[inside_vertex].other_vertex].Next(matched_vertex);
-                }
-                else
-                {
-                    matched_vertex = other_graph[vertex_array[inside_vertex].other_vertex].First();
-                }
-
+                var v = other_graph[vertex_array[inside_vertex].other_vertex];
+                matched_vertex = matched_vertex != None ? v.Next(matched_vertex) : v.First();
                 if (matched_vertex == None)
                     return false;
 
@@ -186,9 +183,21 @@ namespace GrIso
                     continue;
 
                 // check compatibilty of potential match with current inside partial graph
+                int inside_count = 0;
                 for (int vertex = some_graph[outside_vertex].First(); vertex != None; vertex = some_graph[outside_vertex].Next(vertex))
-                    if (vertex_array[vertex].other_vertex != None && !other_graph.Find(vertex_array[vertex].other_vertex, matched_vertex))
-                        continue;
+                    if (vertex_array[vertex].other_vertex != None)
+                    {
+                        if (!other_graph.Find(vertex_array[vertex].other_vertex, matched_vertex))
+                            continue;
+                        ++inside_count;
+                    }
+
+                for (int vertex = other_graph[matched_vertex].First(); vertex != None; vertex = other_graph[matched_vertex].Next(vertex))
+                    if (vertex_array[vertex].some_vertex != None)
+                        --inside_count;
+
+                if (inside_count != 0)
+                    continue;
 
                 // found
                 edge_stack[edge_top].matched_vertex = matched_vertex;

@@ -13,6 +13,7 @@ namespace GrIso
             if (!b)
             {
                 Console.WriteLine("Fail");
+                throw new AbortException("Assert");
             }
         }
 
@@ -162,15 +163,57 @@ namespace GrIso
 
         public void TestGraphIso(int vertex_count, int edge_count)
         {
+            //Debug.WriteLine($"rand seed {RandQuick.Shared.last}");
             Graph graph = Graph.Generate(vertex_count, edge_count);
             List<int> permutation = Graph.Permutate(vertex_count);
             Graph perm = graph.Permutate(permutation);
-            Assert(!graph.Compare(perm));
-            Assert(graph.Compare(perm, permutation));
-            Debug.WriteLine(graph.ToString());
-            Debug.WriteLine(perm.ToString());
+            //Debug.WriteLine(graph.ToString());
+            //Debug.WriteLine(perm.ToString());
             List<int> result = new GraphIso().TryIso(graph, perm);
-            Assert(graph.Compare(perm, result));
+             Assert(graph.Compare(perm, result));
+        }
+
+        public int TestGraphNoIso(int vertex_count, int edge_count)
+        {
+            //Debug.WriteLine($"rand seed {RandQuick.Shared.last}");
+            Graph graph = Graph.Generate(vertex_count, edge_count);
+            //Debug.WriteLine(graph.ToString());
+            //Debug.WriteLine(perm.ToString());
+            List<int> result = new GraphIso().TryIso(graph, Graph.Generate(vertex_count, edge_count));
+            return result == null ? 1 : 0;
+        }
+
+        public void TestGraphIso()
+        {
+            for (int vertex_count = 3; vertex_count < 10; ++vertex_count)
+                for (int edge_count = vertex_count; edge_count < vertex_count * (vertex_count - 1) / 2; ++edge_count)
+                    for (int count = 0; count < 50; ++count)
+                    {
+                        if (count==0)
+                            Console.WriteLine($"{vertex_count} {edge_count}");
+                        TestGraphIso(vertex_count, edge_count);
+                    }
+
+            for (int vertex_count = 10; vertex_count < 16; ++vertex_count)
+                for (int edge_count = vertex_count * (vertex_count - 1) / 4; edge_count < vertex_count * (vertex_count - 1) * 3 / 4; ++edge_count)
+                    for (int count = 0; count < 50; ++count)
+                    {
+                        if (count == 0)
+                            Console.WriteLine($"{vertex_count} {edge_count}");
+                        TestGraphIso(vertex_count, edge_count);
+                    }
+
+            int noiso = 0, total = 0; ;
+            for (int vertex_count = 10; vertex_count < 16; ++vertex_count)
+                for (int edge_count = vertex_count*(vertex_count-1)/4; edge_count < vertex_count * (vertex_count - 1)*3 /4; ++edge_count)
+                    for (int count = 0; count < 50; ++count)
+                    {
+                        if (count == 0)
+                            Console.WriteLine($"{vertex_count} {edge_count}");
+                        ++total;
+                        noiso += TestGraphNoIso(vertex_count, edge_count);
+                    }
+            Assert(noiso < total/100);
         }
     }
 }
