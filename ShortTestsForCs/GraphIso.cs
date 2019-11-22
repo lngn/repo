@@ -66,6 +66,12 @@ namespace GrIso
         // Select next outside vertex for partial graph
         bool NextSomeVertex()
         {
+            if (edge_top == vertex_len - 1)
+                return false;
+            ++edge_top;
+            if (edge_stack[edge_top].outside_vertex != None)
+                return true;
+
             int outside_vertex = -1;
             int inside_vertex = -1;
             int border_edges = 0;
@@ -77,9 +83,6 @@ namespace GrIso
                     border_edges = vertex_array[vertex].border_edges;
                     outside_vertex = vertex;
                 }
-
-            if (outside_vertex == -1)
-                return false;
 
             // select inside vertex basing on heuristic that is good to have not many connection beyond partial graph
             border_edges = some_graph.Count;
@@ -95,7 +98,6 @@ namespace GrIso
                 vertex_array[vertex].border_edges += vertex_array[vertex].other_vertex == None ? 1 : -1;
 
             // push edge attaching outside vertex to partial graph
-            ++edge_top;
             edge_stack[edge_top].outside_vertex = outside_vertex;
             edge_stack[edge_top].inside_vertex = inside_vertex;
             edge_stack[edge_top].matched_vertex = None;
@@ -104,17 +106,10 @@ namespace GrIso
         }
 
         // remove vertex from partial graph and edge from stack
-        bool DropSomeVertex()
+        bool PrevSomeVertex()
         {
-            int outside_vertex = edge_stack[edge_top].outside_vertex;
-            int matched_vertex = edge_stack[edge_top].matched_vertex;
             if (--edge_top == 0)
                 return false;
-
-            // update border edges due to removing inside vertex from partial graph
-            vertex_array[outside_vertex].other_vertex = None;
-            for (int vertex = some_graph[outside_vertex].First(); vertex != None; vertex = some_graph[outside_vertex].Next(vertex))
-                vertex_array[vertex].border_edges += vertex_array[vertex].other_vertex != None ? 1 : -1;
 
             return true;
         }
@@ -137,6 +132,12 @@ namespace GrIso
             edge_stack[0].inside_vertex = None;
             edge_stack[0].matched_vertex = other_vertex;
             edge_stack[0].outside_vertex = some_vertex;
+            for (int i = 1; i < vertex_len; ++i)
+            {
+                edge_stack[i].inside_vertex = None;
+                edge_stack[i].matched_vertex = None;
+                edge_stack[i].outside_vertex = None;
+            }
 
             // try build iso
             while (true)
@@ -148,7 +149,7 @@ namespace GrIso
                 {
                     if (NextOtherVertex())
                         break;
-                    if (!DropSomeVertex())
+                    if (!PrevSomeVertex())
                         return false;
                 }
             }
