@@ -7,6 +7,14 @@ namespace ShortTestsForCs
     {
         static void Main(string[] args)
         {
+            var tests = new OkTests(1919);
+            //tests.TestGraphIso(1000, 1000 * 20 / 2);
+            tests.TestOneShortListCorrectness(128, 1024);
+
+            Console.WriteLine("Done");
+            Console.ReadKey();
+            return;
+
             //new OkTests().PrintRandGraphPermutation(10, 16);
             //new OkTests().PrintRandGraphPermutation(16, 32);
             //new OkTests().TestGraphCompare();

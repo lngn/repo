@@ -103,6 +103,102 @@ void TestFindDoubleHash(int rand_seed, int max_number, int test_count, int hash_
 	std::cout << hash_check << " " << hash_mul << " " << hash_add << std::endl;
 }
 
+void TestStatHash(int rand_seed, int max_number, int test_count, int hash_count, int stat_count, bool randquick_nums, bool randquick_hash)
+{
+	std::mt19937 gen(rand_seed);
+	RandQuick rand_quick(rand_seed);
+
+	uint32_t hash_shift = 32, shift_check = 1;
+	while (shift_check != 0 && shift_check != hash_count)
+	{
+		shift_check <<= 1;
+		--hash_shift;
+	}
+	if (shift_check == 0)
+	{
+		std::cout << "invalid shift" << std::endl;
+	}
+
+	std::vector<uint32_t> test_numbers;
+	std::uniform_int_distribution<uint32_t> dist_test_numbers(0, max_number);
+	for (int c = 0; c < test_count; )
+	{
+		uint32_t n = randquick_nums ? rand_quick(0, max_number) : dist_test_numbers(gen);
+		for (int i = 0; ; ++i)
+		{
+			if (i == c)
+			{
+				test_numbers.push_back(n);
+				++c;
+				break;
+			}
+			else if (n == test_numbers[i])
+				break;
+		}
+	}
+
+	std::uniform_int_distribution<uint32_t> dist_test_hash(0, 0xffffffff);
+	std::vector<uint32_t> test_hash;
+	for (int i = 0; i < hash_count; ++i)
+		test_hash.push_back(0);
+
+
+	uint32_t min_tail=-1, min_tail_collision, max_tail=0, max_tail_collision, min_collision=-1, min_collision_tail, max_collision=0, max_collision_tail;
+	double all_tail = 0, all_collision = 0;
+	uint32_t hash_mul, hash_add, hash_check;
+	for (hash_check = 0;hash_check<stat_count; ++hash_check)
+	{
+		hash_mul = randquick_hash ? rand_quick.Next() : dist_test_hash(gen);
+		hash_add = randquick_hash ? rand_quick.Next() : dist_test_hash(gen);
+
+		for (int i = 0; i < hash_count; ++i)
+			test_hash[i] = 0;
+		for (int i = 0; i < test_count; ++i)
+		{
+			uint32_t j = (test_numbers[i] * hash_mul + hash_add) >> hash_shift;
+			++test_hash[j];
+		}
+		uint32_t tail = 0, collision = 0;
+		
+		for (int i = 0; i < hash_count; ++i)
+		{
+			if (test_hash[i] > tail)
+				tail = test_hash[i];
+			if (test_hash[i] > 1)
+				collision += test_hash[i] - 1;
+		}
+		all_tail += tail;
+		all_collision += collision;
+
+		if (tail < min_tail)
+		{
+			min_tail = tail;
+			min_tail_collision = collision;
+		}
+		if (tail > max_tail)
+		{
+			max_tail = tail;
+			max_tail_collision = collision;
+		}
+		if (collision < min_collision)
+		{
+			min_collision = collision;
+			min_collision_tail = tail;
+		}
+		if (collision > max_collision)
+		{
+			max_collision = collision;
+			max_collision_tail = tail;
+		}
+	}
+
+	std::cout << "min tail " << min_tail <<" " <<min_tail_collision << std::endl;
+	std::cout << "max tail " << max_tail << " " << max_tail_collision << std::endl;
+	std::cout << "min collision " << min_collision<< " " << min_collision_tail << std::endl;
+	std::cout << "max collision " << max_collision << " " << max_collision_tail << std::endl;
+	std::cout << " average " << all_tail / stat_count << " " << all_collision/ stat_count;
+}
+
 void TestFindHash(int rand_seed, int max_number, int test_count, int hash_count, bool randquick_nums, bool randquick_hash)
 {
 	std::mt19937 gen(rand_seed);
