@@ -10,10 +10,10 @@ namespace GrIso
         public const ushort None = ushort.MaxValue;
 
         protected ushort[] data_list = new ushort[] { None, None, None, None };
-        protected int data_size = 0;
+        protected uint data_size = 0;
 
         protected ushort[] hash_list = null;
-        protected int hash_size = 0;
+        protected uint hash_size = 0;
 
         protected int hash_shift;
         protected uint hash_mul;
@@ -40,7 +40,7 @@ namespace GrIso
                 clone.hash_list[i] = hash_list[i];
         }
 
-        public int Count()
+        public uint Count()
         {
             return data_size;
         }
@@ -54,7 +54,7 @@ namespace GrIso
                     short_list[i] = data_list[i];
                 data_list = short_list;
             }
-            hash_list[data_size] = item;
+            data_list[data_size] = item;
             ++data_size;
         }
 
@@ -62,21 +62,27 @@ namespace GrIso
 
         bool DenseHash()
         {
-            if (list_size<2)
+            if (data_size<2)
             {
                 hash_mul = 0;
                 hash_add = 0;
-                this.hash_shift = 0;
+                hash_shift = 0;
+                hash_list = new ushort[1];
+                hash_list[0] = 0;
+                hash_size = 0;
+                if (data_size > 0)
+                    ++hash_size;
                 return true;
             }
 
             ushort max_num = 0;
-            for (int i = 0; i < list_size; ++i)
-                if (hash_list[i] > max_num)
-                    max_num = hash_list[i];
+            for (int i = 0; i < data_size; ++i)
+                if (data_list[i] > max_num)
+                    max_num = data_list[i];
 
-            int hash_size = 1, hash_shift = 32;
-            while (hash_size < list_size)
+            hash_size = 1;
+            hash_shift = 32;
+            while (hash_size < data_size)
             {
                 hash_size <<= 1;
                 --hash_shift;
@@ -93,24 +99,29 @@ namespace GrIso
             hash_mul = 1u <<hash_shift;
             hash_add = 0;
             this.hash_shift = hash_shift;
-            var short_list = hash_list;
             hash_list = new ushort[hash_size];
             for (int i = 0; i < hash_list.Length; ++i)
-                hash_list[i] = None;
+                hash_list[i] = 0;
+            for (int i = 0; i < data_size; ++i)
+                hash_list[data_list[i]] = 1;
+            ushort data_index = 0;
+            for (int i = 0; i < hash_list.Length; ++i)
+            {
+                ushort next_index = hash_list[i];
+                hash_list[i] = data_index;
+                data_index += next_index;
+            }
 
-            for (int i = 0; i < list_size; ++i)
-                hash_list[short_list[i]] = short_list[i];
 
-            PlugNexts();
             return true;
             
         }
 
         private bool Duplicates()
         {
-            Array.Sort(hash_list, 0, list_size);
-            for (int i = 1; i < list_size; ++i)
-                if (hash_list[i - 1] == hash_list[i])
+            Array.Sort(data_list, 0, (int)data_size);
+            for (int i = 1; i < data_size; ++i)
+                if (data_list[i - 1] == data_list[i])
                     return true;
             return false;
         }
@@ -139,10 +150,9 @@ namespace GrIso
             if (shift_check == 0)
                 return false;
 
-            var short_list = hash_list;
             hash_list = new ushort[hash_size];
 
-            uint min_collision = -1;
+            uint min_collision = uint.MaxValue; ;
             for (int hash_check = 0; hash_check < max_hash_check; ++hash_check)
             {
                 RandQuick.Next();
@@ -154,7 +164,7 @@ namespace GrIso
                     hash_list[i] = 0;
                 for (int i = 0; i < data_size; ++i)
                 {
-                    uint hash_index = (short_list[i] * hash_mul + hash_add) >> hash_shift;
+                    uint hash_index = (data_list[i] * hash_mul + hash_add) >> hash_shift;
                     if (hash_list[hash_index] == 0)
                         hash_list[hash_index] = 1;
                     else
@@ -173,8 +183,7 @@ namespace GrIso
             for (uint i = 0; i < data_size; ++i)
             {
                 uint hash_index = (data_list[i] * hash_mul + hash_add) >> hash_shift;
-                if (hash_list[hash_index] == 0)
-                    ++hash_list[hash_index];
+                ++hash_list[hash_index];
             }
 
             ushort data_index = 0;
@@ -185,25 +194,42 @@ namespace GrIso
                 data_index += hash_count;
             }
 
-            for (uint i = 0; i < data_size;)
+            for (uint i1 = 0; i1 < data_size;)
             {
-                uint hash_index = (data_list[i] * hash_mul + hash_add) >> hash_shift;
-                if (hash_list[hash_index] < i || hash_index + 1 != hash_size && i >= hash_list[hash_index + 1])
+                uint hash_index1 = (data_list[i1] * hash_mul + hash_add) >> hash_shift;
+                if (i1<hash_list[hash_index1]  || hash_index1 + 1 != hash_size && i1 >= hash_list[hash_index1 + 1])
                 {
-                    data_index = hash_list[hash_index];
-                    while ()
+                    for ( uint i2= hash_list[hash_index1]; ;++i2)                    
                     {
-                        uint hash_index = (data_list[data_index] * hash_mul + hash_add) >> hash_shift;
+                        uint hash_index2 = (data_list[i2] * hash_mul + hash_add) >> hash_shift;
+                        if (hash_index1 != hash_index2)
+                        {
+                            ushort item = data_list[i1];
+                            data_list[i1] = data_list[i2];
+                            data_list[i2] = item;
+                            break;
+                        }
                     }
                 }
-                else ++i;
+                else ++i1;
             }
+
+            return true;
         }
 
         public bool Find(ushort item)
         {
-            int hash_index = (int)((item * hash_mul + hash_add) >> hash_shift);
-            return item == hash_list[hash_index];
+            uint hash_index = (item * hash_mul + hash_add) >> hash_shift;
+            uint index = hash_list[hash_index];
+            ++hash_index;
+            uint finish = hash_index < hash_size ? hash_list[hash_index] : data_size;
+            while (index<finish)
+            {
+                if (data_list[index] == item)
+                    return true;
+                ++index;
+            }
+            return false;
         }
     }
 }
