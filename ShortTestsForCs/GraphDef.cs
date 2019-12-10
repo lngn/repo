@@ -10,7 +10,7 @@ namespace GrIso
         public AbortException(string message) : base(message) { }
     }
 
-    class GraphVertex : ShortHashList   
+    class GraphVertex : VeryShortHashList   
     {
         public new GraphVertex Clone()
         {

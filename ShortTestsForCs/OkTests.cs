@@ -125,7 +125,7 @@ namespace GrIso
         }
 
 
-        public void TestShortListPerformace(int max_list_size)
+        public void TestVeryShortListPerformace(int max_list_size)
         {
             int fake = 0;
             Console.WriteLine("Find(list size;ref time ms;hash time ms;)");
@@ -134,7 +134,7 @@ namespace GrIso
                 var hash_test = new HashSet<ushort>();
                 while (hash_test.Count < list_size)
                     hash_test.Add((ushort)rand_quick.Next(0, 0xfff));
-                var hash_list = new ShortHashList();
+                var hash_list = new VeryShortHashList();
                 foreach (var i in hash_test)
                     hash_list.Append(i);
 
@@ -159,7 +159,7 @@ namespace GrIso
                 var hash_test = new HashSet<ushort>();
                 while (hash_test.Count < list_size)
                     hash_test.Add((ushort)rand_quick.Next(0, 0xfff));
-                var hash_list = new ShortHashList();
+                var hash_list = new VeryShortHashList();
                 foreach (var i in hash_test)
                     hash_list.Append(i);
 
