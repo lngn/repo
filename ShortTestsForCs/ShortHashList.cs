@@ -40,13 +40,9 @@ namespace GrIso
                 clone.hash_list[i] = hash_list[i];
         }
 
-        public uint Count()
+        public void Append(int item)
         {
-            return data_size;
-        }
-
-        public void Append(ushort item)
-        {
+            ushort item2 = (ushort)item;
             if (data_size == data_list.Length)
             {
                 var short_list = new ushort[2 * data_size];
@@ -54,7 +50,7 @@ namespace GrIso
                     short_list[i] = data_list[i];
                 data_list = short_list;
             }
-            data_list[data_size] = item;
+            data_list[data_size] = item2;
             ++data_size;
         }
 
@@ -98,7 +94,6 @@ namespace GrIso
              
             hash_mul = 1u <<hash_shift;
             hash_add = 0;
-            this.hash_shift = hash_shift;
             hash_list = new ushort[hash_size];
             for (int i = 0; i < hash_list.Length; ++i)
                 hash_list[i] = 0;
@@ -217,19 +212,29 @@ namespace GrIso
             return true;
         }
 
-        public bool Find(ushort item)
+        public bool Find(int item)
         {
-            uint hash_index = (item * hash_mul + hash_add) >> hash_shift;
+            ushort item2 = (ushort)item;
+            uint hash_index = (item2 * hash_mul + hash_add) >> hash_shift;
             uint index = hash_list[hash_index];
             ++hash_index;
             uint finish = hash_index < hash_size ? hash_list[hash_index] : data_size;
             while (index<finish)
             {
-                if (data_list[index] == item)
+                if (data_list[index] == item2)
                     return true;
                 ++index;
             }
             return false;
+        }
+
+        public int Count
+        {
+            get { return (int)data_size; }
+        }
+        public int this[int index]
+        {
+            get { return data_list[index]; }
         }
     }
 }

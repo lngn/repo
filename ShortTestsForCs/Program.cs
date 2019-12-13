@@ -8,16 +8,10 @@ namespace ShortTestsForCs
         static void Main(string[] args)
         {
             var tests = new OkTests(1919);
+            //tests.TestAllShortListCorrectness(39);
+            //tests.TestGraphCompare();
             tests.TestGraphIso();
-
-            // tests.TestShortListPerformace(39);
-
-            //tests.TestOneVeryShortListCorrectness(2,10,876265113,2891641121);
-            tests.TestAllShortListCorrectness(39);
-
-            //tests.TestGraphIso(1000, 1000 * 20 / 2);
-            tests.TestOneShortListCorrectness(128, 1024);
-
+            
             Console.WriteLine("Done");
             Console.ReadKey();
             return;

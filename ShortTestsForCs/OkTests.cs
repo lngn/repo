@@ -255,7 +255,7 @@ namespace GrIso
                         TestGraphIso(vertex_count, edge_count);
                     }
 
-            int noiso = 0, total = 0; ;
+            int noiso = 0, total = 0;
             for (int vertex_count = 10; vertex_count < 16; ++vertex_count)
                 for (int edge_count = vertex_count*(vertex_count-1)/4; edge_count < vertex_count * (vertex_count - 1)*3 /4; ++edge_count)
                     for (int count = 0; count < 50; ++count)

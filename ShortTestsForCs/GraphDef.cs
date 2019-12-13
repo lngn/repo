@@ -10,37 +10,13 @@ namespace GrIso
         public AbortException(string message) : base(message) { }
     }
 
-    class GraphVertex : VeryShortHashList   
+    class GraphVertex : ShortHashList   
     {
         public new GraphVertex Clone()
         {
             var clone = new GraphVertex();
             base.Clone(clone);
             return clone;
-        }
-
-        private new void Append(ushort vertex) { }
-        public void Append(int vertex)
-        {
-            if (vertex >= None)
-                throw new AbortException("Vertex number out of range");
-            base.Append((ushort)vertex);
-        }
-        private new ushort Next(ushort vertex) { return None;  }
-        public int Next(int vertex)
-        {
-            return base.Next((ushort)vertex);
-        }
-        public new int First()
-        {
-            return base.First();
-        }
-        private new bool Find(ushort vertex) { return false;  }
-        public bool Find(int item)
-        {
-            uint hash_val = (uint)item;
-            int hash_index = (int)((hash_val * hash_mul + hash_add) >> hash_shift);
-            return item == hash_list[hash_index];
         }
     }
 
@@ -86,12 +62,12 @@ namespace GrIso
             if (Count != graph.Count)
                 return false;
             for (int i = 0; i < Count; ++i)
-                if (graph[i].Count() != this[i].Count())
+                if (graph[i].Count != this[i].Count)
                     return false;
 
-            for (int i1 = 0; i1 < Count; ++i1)
-                for (int i2 = this[i1].First(); i2 != GraphVertex.None; i2 = this[i1].Next(i2))
-                    if (!graph.Find(i1, i2))
+            for (int i1 = 0, c1 = Count; i1 < c1; ++i1)
+                for (int i2 = 0, c2 = this[i1].Count; i2 <c2;++i2)
+                    if (!graph.Find(i1, this[i1][i2]))
                         return false;
 
                 return true;
@@ -100,25 +76,12 @@ namespace GrIso
         public override string ToString()
         {
             var sb = new StringBuilder();
-            sb.Append("[");
-            int i1 = 0, i2;
-            while (true)
-            {
-                var v = this[i1];
-                i2 = v.First();
-                while (true)
-                {
-                    sb.Append($"[{i1},{i2}]");
-                    i2 = v.Next(i2);
-                    if (i2 == GraphVertex.None)
-                        break;
-                    sb.Append(",");
-                }
-                ++i1;
-                if (i1 == Count)
-                    break;
-                sb.Append("]");
-            }
+            sb.Append($"[{0},{this[0][0]}]");
+            for (int i1 = 0, i2 = 1, c1 = Count; i1 < c1; ++i1, i2=0)
+                for (int c2 = this[i1].Count; i2 < c2; ++i2)
+                    sb.Append($",[{i1},{this[i1][i2]}]");
+            
+           
             return sb.ToString();
         }
 
@@ -218,15 +181,17 @@ namespace GrIso
             if (Count != graph.Count)
                 return false;
             for (int i = 0; i < Count; ++i)
-                if (this[i].Count() != graph[permutation[i]].Count())
+                if (this[i].Count != graph[permutation[i]].Count)
                     return false;
 
-            for (int i1 = 0; i1 < Count; ++i1)
+            for (int i1 = 0,  c1 = Count; i1 < c1; ++i1)
             {
                 var v = this[i1];
-                for (int i2 = v.First(); i2 != None; i2 = v.Next(i2))
-                    if (!graph.Find(permutation[i1], permutation[i2]))
+                for (int i2 = 0, c2 = v.Count; i2 <c2; i2 = ++i2)
+                {
+                    if (!graph.Find(permutation[i1], permutation[v[i2]]))
                         return false;
+                }
             }
 
             return true;
@@ -238,9 +203,11 @@ namespace GrIso
             for (int i1 = 0; i1 < Count; ++i1)
             {
                 var v = this[i1];
-                for (int i2 = v.First(); i2 != None; i2 = v.Next(i2))
-                    if (i1 < i2)
-                        graph.Append(permutation[i1], permutation[i2]);
+                for (int i2 = 0, c2 = v.Count; i2 < c2; i2 = ++i2)
+                {
+                    if (i1 < v[i2])
+                        graph.Append(permutation[i1], permutation[v[i2]]);
+                }
             }
 
             if (!graph.Hash())
