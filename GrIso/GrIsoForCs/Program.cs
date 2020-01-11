@@ -1,7 +1,7 @@
 ﻿using System;
 using GrIso;
 
-namespace ShortTestsForCs
+namespace GrIsoForCs
 {
     class Program
     {
