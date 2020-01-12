@@ -153,6 +153,13 @@
   <ItemGroup>
     <ClCompile Include="hastest.cpp" />
     <ClCompile Include="GrIsoForCp.cpp" />
+    <ClCompile Include="OkTests.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GraphDef.h" />
+    <ClInclude Include="GraphIso.h" />
+    <ClInclude Include="RandQuick.h" />
+    <ClInclude Include="ShortHashList.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
