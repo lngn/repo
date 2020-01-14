@@ -23,7 +23,6 @@ namespace GrIso
 		const int _vertex_count;
 
 	public:
-		Graph() {}
         Graph(int vertex_count)
 			:_vertex_count(vertex_count)
         {
@@ -92,12 +91,14 @@ namespace GrIso
         }
 
         // Generate random connected graph.
-        void Generate(int vertex_count, int edge_count)
+        static Graph Generate(int vertex_count, int edge_count)
         {
             if (edge_count < vertex_count - 1)
                 Abort("too less edge - only connected graph");
             if (edge_count >= vertex_count * (vertex_count - 1))
                 Abort("too many edge - symetric graph");
+
+			Graph graph(vertex_count);
 
             /* Explicite added and removed edges depending on bool flag. 
              * For dense graph filled only removed edges excepts those have been choosen to make connected graph. For not dense graph is simpler.
@@ -157,11 +158,12 @@ namespace GrIso
                 }
 
 				for (auto it = edges.begin(); it != edges.end(); ++it)
-					Append(std::get<0>(*it), std::get<1>(*it));
+					graph.Append(it->get<0>(), std::get<1>(*it));
             }
 
-            if (!Hash())
+            if (!graph.Hash())
                 Abort("Cannot make short hash");
+			return graph;
         }
 
         static std::vector<int> Permutate(int vertex_count)

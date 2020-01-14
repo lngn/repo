@@ -27,29 +27,29 @@ namespace GrIso
             else
                 seed_test = rand_quick.last;
             if (seed_hash != 0)
-                RandQuick.Shared.last = seed_hash;
+                RandQuickShared.last = seed_hash;
             else
-                seed_hash = RandQuick.Shared.last;
-            Console.WriteLine($"{list_size} {item_size} {seed_test} {seed_hash}");
+                seed_hash = RandQuickShared.last;
+            printf("%d %d %d %d\n",list_size, item_size, seed_test, seed_hash);
 
-            var hash_test = new HashSet<ushort>();
-            while (hash_test.Count < list_size)
-                hash_test.Add((ushort)rand_quick.Next(0, item_size));
-            var hash_list = new ShortHashList();
-            foreach (var i in hash_test)
+			std::unordered_set<short> hash_test;
+            while (hash_test.size() < list_size)
+                hash_test.insert((ushort)rand_quick.Next(0, item_size));
+			ShortHashList hash_list;
+            for (auto i : hash_test)
                 hash_list.Append(i);
 
             bool b = hash_list.Hash();
             if (!b)
             {
-                Console.WriteLine("Hash not found {list_size}");
+                printf("Hash not found %d\n",list_size);
                 return false;
             }
 
-            foreach (var i in hash_test)
+            for (auto i : hash_test)
                 Assert(hash_list.Find(i));
             for (ushort i = 0; i <= item_size; ++i)
-                Assert(hash_test.Contains(i) == hash_list.Find(i));
+                Assert(hash_test.find(i) == hash_list.Find(i));
 
             return true;
         }
@@ -59,7 +59,7 @@ namespace GrIso
             int hash_fails = 0, hash_count = 0;
             for (;test_count > 0; --test_count)
             {
-                Console.WriteLine($"Test no {21 - test_count}");
+                printf("Test no %d\n", test_count);
                 for (int list_size = 1; list_size < max_list_size; ++list_size)
                     for (int item_size = list_size - 1; item_size < 1024; ++item_size)
                     {
@@ -68,60 +68,10 @@ namespace GrIso
                             ++hash_fails;
                     }
             }
-            Console.WriteLine($"Hash fails {hash_fails} of {hash_count}");
+            printf("Hash fails %d of %d\n", hash_fails, hash_count);
         }
 
-        bool TestOneVeryShortListCorrectness(int list_size, int item_size, uint seed_test = 0, uint seed_hash = 0)
-        {
-            if (seed_test != 0)
-                rand_quick.last = seed_test;
-            else
-                seed_test = rand_quick.last;
-            if (seed_hash != 0)
-                RandQuick.Shared.last = seed_hash;
-            else
-                seed_hash = RandQuick.Shared.last;
-            Console.WriteLine($"{list_size} {item_size} {seed_test} {seed_hash}");
-
-            var hash_test = new HashSet<ushort>();
-            while (hash_test.Count < list_size)
-                hash_test.Add((ushort)rand_quick.Next(0, item_size));
-            var hash_list = new VeryShortHashList();
-            foreach (var i in hash_test)
-                hash_list.Append(i);
-
-            bool b = hash_list.Hash();
-            if (!b)
-            {
-                Console.WriteLine("Hash not found {list_size}");
-                return false;
-            }
-
-            foreach (var i in hash_test)
-                Assert(hash_list.Find(i));
-            for (ushort i = 0; i <= item_size; ++i)
-                Assert(hash_test.Contains(i) == hash_list.Find(i));
-
-            return true;
-        }
-
-        void TestAllVeryShortListCorrectness(int max_list_size, int test_count = 20)
-        {
-            int hash_fails = 0, hash_count = 0;
-            for (; test_count > 0; --test_count)
-            {
-                Console.WriteLine($"Test no {21 - test_count}");
-                for (int list_size = 1; list_size < max_list_size; ++list_size)
-                    for (int item_size = list_size - 1; item_size < 1024; ++item_size)
-                    {
-                        ++hash_count;
-                        if (!TestOneVeryShortListCorrectness(list_size, item_size))
-                            ++hash_fails;
-                    }
-            }
-            Console.WriteLine($"Hash fails {hash_fails} of {hash_count}");
-        }
-
+        
 
         void TestVeryShortListPerformace(int max_list_size)
         {
@@ -183,10 +133,11 @@ namespace GrIso
 
         void TestGraphCompare(int vertex_count, int edge_count)
         {
-            Graph graph = Graph.Generate(vertex_count, edge_count);
-            Assert(graph.Compare(graph.Clone()));
-            Assert(!graph.Compare(Graph.Generate(vertex_count, edge_count)));
-            List<int> permutation = Graph.Permutate(vertex_count);
+			Graph graph = Graph::Generate(vertex_count, edge_count);
+			Graph clone = graph;
+            Assert(graph.Compare(clone));
+            Assert(!graph.Compare(Graph::Generate(vertex_count, edge_count)));
+            std::vector<int> permutation = Graph::Permutate(vertex_count);
             Graph perm = graph.Permutate( permutation);
             Assert(!graph.Compare(perm));
             Assert(graph.Compare(perm,permutation));
@@ -202,8 +153,8 @@ namespace GrIso
 
         void PrintRandGraphPermutation(int vertex_count, int edge_count)
         {
-            Graph graph = Graph.Generate(vertex_count, edge_count);
-            List<int> permutation = Graph.Permutate(vertex_count);
+            Graph graph = Graph::Generate(vertex_count, edge_count);
+            std::vector<int> permutation = Graph::Permutate(vertex_count);
             Graph perm = graph.Permutate(permutation);
             Assert(!graph.Compare(perm));
             Assert(graph.Compare( perm, permutation));
@@ -215,22 +166,22 @@ namespace GrIso
         {
             //Debug.WriteLine($"rand seed {RandQuick.Shared.last}");
             Graph graph = Graph.Generate(vertex_count, edge_count);
-            List<int> permutation = Graph.Permutate(vertex_count);
+            std::vector<int> permutation = Graph::Permutate(vertex_count);
             Graph perm = graph.Permutate(permutation);
             //Debug.WriteLine(graph.ToString());
             //Debug.WriteLine(perm.ToString());
-            List<int> result = new GraphIso().TryIso(graph, perm);
+            std::vector<int> result = GraphIso().TryIso(graph, perm);
              Assert(graph.Compare(perm, result));
         }
 
         int TestGraphNoIso(int vertex_count, int edge_count)
         {
             //Debug.WriteLine($"rand seed {RandQuick.Shared.last}");
-            Graph graph = Graph.Generate(vertex_count, edge_count);
+            Graph graph = Graph::Generate(vertex_count, edge_count);
             //Debug.WriteLine(graph.ToString());
             //Debug.WriteLine(perm.ToString());
-            List<int> result = new GraphIso().TryIso(graph, Graph.Generate(vertex_count, edge_count));
-            return result == null ? 1 : 0;
+            std::vector<int> result = GraphIso().TryIso(graph, Graph.Generate(vertex_count, edge_count));
+            return result.empty() ? 1 : 0;
         }
 
         void TestGraphIso()
@@ -240,7 +191,7 @@ namespace GrIso
                     for (int count = 0; count < 50; ++count)
                     {
                         if (count==0)
-                            Console.WriteLine($"{vertex_count} {edge_count}");
+                            printf("%d %d\n", vertex_count, edge_count);
                         TestGraphIso(vertex_count, edge_count);
                     }
 
@@ -249,7 +200,7 @@ namespace GrIso
                     for (int count = 0; count < 50; ++count)
                     {
                         if (count == 0)
-                            Console.WriteLine($"{vertex_count} {edge_count}");
+                            printf("%d %d\n", vertex_count, edge_count);
                         TestGraphIso(vertex_count, edge_count);
                     }
 
@@ -259,7 +210,7 @@ namespace GrIso
                     for (int count = 0; count < 50; ++count)
                     {
                         if (count == 0)
-                            Console.WriteLine($"{vertex_count} {edge_count}");
+                            printf("%d %d\n", vertex_count, edge_count);
                         ++total;
                         noiso += TestGraphNoIso(vertex_count, edge_count);
                     }
