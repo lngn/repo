@@ -1,8 +1,9 @@
 ﻿
 #pragma once
 #include "ShortHashList.h"
-#include "exception"
-#include "unordered_set"
+#include <exception>
+#include <set>
+#include <tuple>
 #define This (*this)
 
 namespace GrIso
@@ -10,29 +11,19 @@ namespace GrIso
     
     class GraphVertex : public ShortHashList   
     {
-
-		GraphVertex & operator=(const GraphVertex&) = delete;
-		GraphVertex(const GraphVertex&) = delete;
-
+		public:
 	};
 
     class Graph: public std::vector<GraphVertex>    
     {
-        static void Abort(const std::string & message) { throw new std::exception(message); }
+        static void Abort(const char* message) { throw std::exception(message); }
         const int None = ushort(-1);
-		const int _vertex_count;
-
+		
 	public:
-        Graph(int vertex_count)
-			:_vertex_count(vertex_count)
+        Graph(int vertex_count)		
         {
 			resize(vertex_count);
         }
-
-		int Count()
-		{
-			return _vertex_count;
-		}
 
         void Append(int some_vertex, int other_vertex)
         {
@@ -42,7 +33,7 @@ namespace GrIso
 
         bool Hash()
         {
-            for (int i = 0; i < Count(); ++i)
+            for (uint i = 0; i < size(); ++i)
             {
                 if (!This[i].Hash())
                     return false;
@@ -50,21 +41,21 @@ namespace GrIso
             return true;
         }
 
-        bool Find(int some_vertex, int other_vertex)
+        bool Find(int some_vertex, int other_vertex) const
         {
             return This[some_vertex].Find(other_vertex);
         }
 
         bool Compare(Graph graph)
         {
-            if (Count() != graph.Count())
+            if (size() != graph.size())
                 return false;
-            for (int i = 0; i < Count(); ++i)
+            for (uint i = 0; i < size(); ++i)
                 if (graph[i].Count() != This[i].Count())
                     return false;
 
-            for (int i1 = 0, c1 = Count(); i1 < c1; ++i1)
-                for (int i2 = 0, c2 = This[i1].Count(); i2 <c2;++i2)
+            for (uint i1 = 0, c1 = size(); i1 < c1; ++i1)
+                for (uint i2 = 0, c2 = This[i1].Count(); i2 <c2;++i2)
                     if (!graph.Find(i1, This[i1][i2]))
                         return false;
 
@@ -73,18 +64,17 @@ namespace GrIso
         
         std::string ToString()
         {
-			void ToString1(std::string & s, int i1, int i2)
+			auto ToString1 = [this](std::string & s, int i1, int i2)
 			{
 				char b[32];
-				sprintf(b, "[%d,%d]", i1, This]i1][i2]);
+				sprintf_s(b, "[%d,%d]", i1, This[i1][i2]);
 				s.append(b);
-
 			};
 
 			std::string s;
 			ToString1(s, 0, 0);
-			for (int i1 = 0, i2 = 1, c1 = Count(); i1 < c1; ++i1, i2 = 0)
-				for (int c2 = this[i1].Count(); i2 < c2; ++i2)
+			for (uint i1 = 0, i2 = 1, c1 = size(); i1 < c1; ++i1, i2 = 0)
+				for (uint c2 = This[i1].Count(); i2 < c2; ++i2)
 					ToString1(s, i1, i2);
            
 			return s;
@@ -104,7 +94,7 @@ namespace GrIso
              * For dense graph filled only removed edges excepts those have been choosen to make connected graph. For not dense graph is simpler.
              * This gives 1/2 chance of add a random edge.
              */		
-            std::unordered_set<std::tuple<int, int, bool>> edges;
+            std::set<std::tuple<int, int, bool>> edges;
 
             //  make graph connected
 			std::vector<int> permutation;
@@ -138,13 +128,13 @@ namespace GrIso
                     int i1 = RandQuickShared.Next(0, vertex_count - 1);
                     int i2 = RandQuickShared.Next(0, vertex_count - 1);
                     if (i2 < i1) { int i3 = i1; i1 = i2; i2 = i3; }
-					if (i1 != i2 && !edges.find({ i1, i2, true }) && !edges.find({ i1, i2, false }))
+					if (i1 != i2 && !edges.count({ i1, i2, true }) && !edges.count({ i1, i2, false }))
 						edges.insert({ i1, i2, false });
                 }
                 for (int i1 = 0; i1 < vertex_count; ++i1)
                     for (int i2 = i1 + 1; i2 < vertex_count; ++i2)
-						if (edges.find({ i1, i2, true }) || !edges.find({ i1, i2, false }))
-                            Append((ushort)i1, (ushort)i2);
+						if (edges.count({ i1, i2, true }) || !edges.count({ i1, i2, false }))
+                            graph.Append((ushort)i1, (ushort)i2);
             }
             else
             {
@@ -153,12 +143,12 @@ namespace GrIso
                     int i1 = RandQuickShared.Next(0, vertex_count - 1);
                     int i2 = RandQuickShared.Next(0, vertex_count - 1);
                     if (i2 < i1) { int i3 = i1; i1 = i2; i2 = i3; }
-					if (i1 != i2 && !edges.find({ i1, i2, true }))
+					if (i1 != i2 && !edges.count({ i1, i2, true }))
 						edges.insert({ i1, i2, true });
                 }
 
 				for (auto it = edges.begin(); it != edges.end(); ++it)
-					graph.Append(it->get<0>(), std::get<1>(*it));
+					graph.Append(std::get<0>(*it), std::get<1>(*it));
             }
 
             if (!graph.Hash())
@@ -184,18 +174,18 @@ namespace GrIso
             return permutation;
         }
 
-        bool Compare(Graph & graph, std::vector<int> & permutation)
+        bool Compare(const Graph & graph, const std::vector<int> & permutation) const
         {
-            if (Count() != graph.Count())
+            if (size() != graph.size())
                 return false;
-            for (int i = 0; i < Count(); ++i)
+            for (uint i = 0; i < size(); ++i)
                 if (This[i].Count() != graph[permutation[i]].Count())
                     return false;
 
-            for (int i1 = 0,  c1 = Count(); i1 < c1; ++i1)
+            for (uint i1 = 0,  c1 = size(); i1 < c1; ++i1)
             {
                 auto & v = This[i1];
-                for (int i2 = 0, c2 = v.Count(); i2 <c2; i2 = ++i2)
+                for (uint i2 = 0, c2 = v.Count(); i2 <c2; i2 = ++i2)
                 {
                     if (!graph.Find(permutation[i1], permutation[v[i2]]))
                         return false;
@@ -207,11 +197,11 @@ namespace GrIso
 
         Graph Permutate(std::vector<int> & permutation)
         {
-            Graph graph(Count());
-            for (int i1 = 0; i1 < Count(); ++i1)
+            Graph graph(size());
+            for (uint i1 = 0; i1 < size(); ++i1)
             {
                 auto & v = This[i1];
-                for (int i2 = 0, c2 = v.Count(); i2 < c2; i2 = ++i2)
+                for (uint i2 = 0, c2 = v.Count(); i2 < c2; i2 = ++i2)
                 {
                     if (i1 < v[i2])
                         graph.Append(permutation[i1], permutation[v[i2]]);

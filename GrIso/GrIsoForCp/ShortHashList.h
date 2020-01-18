@@ -52,9 +52,9 @@ namespace GrIso
 				uint hash_add = RandQuickShared.Next();
 
 				uint collision = 0;
-				for (int i = 0; i < hash_size; ++i)
+				for (uint i = 0; i < hash_size; ++i)
 					hash_list[i] = 0;
-				for (int i = 0; i < data_size; ++i)
+				for (uint i = 0; i < data_size; ++i)
 				{
 					uint hash_index = (data_list[i] * hash_mul + hash_add) >> hash_shift;
 					if (hash_list[hash_index] == 0)
@@ -109,7 +109,7 @@ namespace GrIso
 			return true;
 		}
 
-		bool Find(int item)
+		bool Find(int item) const
 		{
 			ushort item2 = (ushort)item;
 			uint hash_index = (item2 * hash_mul + hash_add) >> hash_shift;
@@ -125,12 +125,12 @@ namespace GrIso
 			return false;
 		}
 
-		int Count() 
+		uint Count() const 
 		{
-			data_size; 
+			return data_size; 
 		} 
 		
-		int operator[] (int index)
+		uint operator[] (int index) const
 		{
 			return data_list[index]; 
 		}
@@ -159,7 +159,7 @@ namespace GrIso
             }
 
             ushort max_num = 0;
-            for (int i = 0; i < data_size; ++i)
+            for (uint i = 0; i < data_size; ++i)
                 if (data_list[i] > max_num)
                     max_num = data_list[i];
 
@@ -182,12 +182,12 @@ namespace GrIso
             hash_mul = 1u <<hash_shift;
             hash_add = 0;
 			hash_list.resize(hash_size);
-            for (int i = 0; i < hash_size; ++i)
+            for (uint i = 0; i < hash_size; ++i)
                 hash_list[i] = 0;
-            for (int i = 0; i < data_size; ++i)
+            for (uint i = 0; i < data_size; ++i)
                 hash_list[data_list[i]] = 1;
             ushort data_index = 0;
-            for (int i = 0; i < hash_size; ++i)
+            for (uint i = 0; i < hash_size; ++i)
             {
                 ushort next_index = hash_list[i];
                 hash_list[i] = data_index;
@@ -200,10 +200,10 @@ namespace GrIso
         bool Duplicates()
         {
 			std::sort(data_list.begin(), data_list.end());
-            for (int i = 1; i < data_size; ++i)
+            for (uint i = 1; i < data_size; ++i)
                 if (data_list[i - 1] == data_list[i])
                     return true;
             return false;
         }
-    }
+	};
 }

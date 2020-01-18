@@ -5,9 +5,17 @@
 namespace GrIso
 {
 	
-    class GraphIso
+    class GraphIso: public std::vector<int>
     {
-		static void Abort(const std::string & message) { throw new std::exception(message); }
+	public:
+		GraphIso(const Graph & some_graph_, const Graph & other_graph_)
+			: some_graph(some_graph_), other_graph(other_graph_)
+		{
+			TryIso();
+		}
+
+	private:
+		static void Abort(const char* message) { throw std::exception(message); }
 		const int None = ushort(-1);
 
         struct VertexData
@@ -24,63 +32,52 @@ namespace GrIso
             int matched_index;
 		};
 
-        std::unique_ptr<VertexData> vertex_array;
-		std::unique_ptr<EdgeData> edge_stack;
-        int vertex_len;
-        int edge_top;
+        std::unique_ptr<VertexData[]> vertex_array;
+		std::unique_ptr<EdgeData[]> edge_stack;
+        uint vertex_cnt;
+        uint edge_top;
 
-		class
-		{
-				Graph* g;
-		public :
-				void operator= (Graph & g) { this->g = g;  }
-				operator Graph&() { return *g;  }
-		} some_graph, other_graph;
+		const Graph & some_graph;
+		const Graph & other_graph;
 
-		std::vector<int>TryIso(Graph & some_graph, Graph & other_graph)
+		void TryIso()
         {
-            if (some_graph.Count() != other_graph.Count())
-                return std::vector<int>();
+			if (some_graph.size() != other_graph.size())
+				return;
             
-            This.some_graph = some_graph;
-            This.other_graph = other_graph;
-            vertex_array = std::make_unique<VertexData>(new VertexData[some_graph.Count]);
-            vertex_len = some_graph.Count;
-            edge_stack = std::make_unique<EdgeData>(new EdgeData[some_graph.Count]);
+			vertex_cnt = some_graph.size();
+            vertex_array = std::unique_ptr<VertexData[]>(new VertexData[vertex_cnt]);
+            edge_stack = std::unique_ptr<EdgeData[]>(new EdgeData[vertex_cnt]);
 
-            int some_vertex = None, other_vertex = None, border_edges = 0;
-            for (int i = 0; i < some_graph.Count; ++i)
-                if (some_graph[i].Count > border_edges)
+            uint some_vertex = None, other_vertex = None, border_edges = 0;
+            for (uint i = 0; i < vertex_cnt; ++i)
+                if (some_graph[i].Count() > border_edges)
                 {
                     some_vertex = i;
-                    border_edges = some_graph[i].Count;
+                    border_edges = some_graph[i].Count();
                 }
-            for (int i = 0; i < other_graph.Count; ++i)
-                if (other_graph[i].Count == border_edges)
+            for (uint i = 0; i < vertex_cnt; ++i)
+                if (other_graph[i].Count() == border_edges)
                 {
                     other_vertex = i;
                     if (TryIso(some_vertex, other_vertex))
-                        return GetIso();
+                        GetIso();
                 }
-
-			return std::vector<int>();
         }
 
-		std::vector<int> GetIso()
+		void GetIso()
         {
-			std::vector<int> permutation;
-			permutation.reserve(vertex_len);
-            for (int i = 0; i < vertex_len; ++i)
-                permutation.push_back(vertex_array[i].other_vertex);
-            if (!some_graph.Compare(other_graph, permutation))
+			reserve(vertex_cnt);
+            for (uint i = 0; i < vertex_cnt; ++i)
+                push_back(vertex_array[i].other_vertex);
+            if (!some_graph.Compare(other_graph, (std::vector<int>&)*this))
                 Abort("This lies that it has found.");
-            return permutation;
         }
 
         // Select next outside vertex for partial graph
         bool NextSomeVertex()
         {
-            if (edge_top == vertex_len - 1)
+            if (edge_top == vertex_cnt - 1)
                 return false;
             ++edge_top;
             if (edge_stack[edge_top].outside_vertex != None)
@@ -91,7 +88,7 @@ namespace GrIso
             int border_edges = 0;
 
             // select ouside vertex basing on heuristic that is good to have many connection to partial graph: more chance to find error in matching
-            for (int vertex = 0; vertex < vertex_len; ++vertex)
+            for (uint vertex = 0; vertex < vertex_cnt; ++vertex)
                 if (vertex_array[vertex].other_vertex == None && vertex_array[vertex].border_edges > border_edges)
                 {
                     border_edges = vertex_array[vertex].border_edges;
@@ -99,10 +96,10 @@ namespace GrIso
                 }
 
             // select inside vertex basing on heuristic that is good to have not many connection beyond partial graph
-            border_edges = some_graph.Count();
-            for (int vertex_index = 0, vertext_count = some_graph[outside_vertex].Count; vertex_index<vertext_count;++vertex_index)
+            border_edges = vertex_cnt;
+            for (uint vertex_index = 0, vertext_count = some_graph[outside_vertex].Count(); vertex_index<vertext_count;++vertex_index)
             {
-                auto vertex = some_graph[outside_vertex][vertex_index];
+                uint vertex = some_graph[outside_vertex][vertex_index];
                 if (vertex_array[vertex].other_vertex != None && vertex_array[vertex].border_edges < border_edges)
                 {
                     inside_vertex = vertex;
@@ -111,7 +108,7 @@ namespace GrIso
             }
 
             // update border edges due to moving outside vertex to partial graph
-            for (int vertex_index = 0, vertext_count = some_graph[outside_vertex].Count; vertex_index < vertext_count; ++vertex_index)
+            for (int vertex_index = 0, vertext_count = some_graph[outside_vertex].Count(); vertex_index < vertext_count; ++vertex_index)
             {
                     auto vertex = some_graph[outside_vertex][vertex_index];
                     vertex_array[vertex].border_edges += vertex_array[vertex].other_vertex == None ? 1 : -1;
@@ -136,7 +133,7 @@ namespace GrIso
         bool TryIso(int some_vertex, int other_vertex)
         {
             // initiate vertex array
-            for (int i=0;i<vertex_len;++i)
+            for (uint i=0;i<vertex_cnt;++i)
             {
                 vertex_array[i].other_vertex = None;
                 vertex_array[i].some_vertex = None;
@@ -144,7 +141,7 @@ namespace GrIso
             }
             vertex_array[some_vertex].other_vertex = other_vertex;
             vertex_array[other_vertex].some_vertex = some_vertex;
-            vertex_array[some_vertex].border_edges = some_graph[some_vertex].Count;
+            vertex_array[some_vertex].border_edges = some_graph[some_vertex].Count();
 
             // initiate edge stack
             edge_top = 0;
@@ -152,7 +149,7 @@ namespace GrIso
             edge_stack[0].matched_index= -1;
             edge_stack[0].outside_vertex = some_vertex;
             
-            for (int i = 1; i < vertex_len; ++i)
+            for (uint i = 1; i < vertex_cnt; ++i)
             {
                 edge_stack[i].inside_vertex = None;
                 edge_stack[i].matched_index = -1;
@@ -182,8 +179,8 @@ namespace GrIso
             int outside_vertex = edge_stack[edge_top].outside_vertex;
             vertex_array[outside_vertex].other_vertex = None;
             
-            auto other_vertex = other_graph[vertex_array[inside_vertex].other_vertex];
-            int matched_count = other_vertex.Count;
+            auto & other_vertex = other_graph[vertex_array[inside_vertex].other_vertex];
+            int matched_count = other_vertex.Count();
             int matched_index = edge_stack[edge_top].matched_index;
 
             if (matched_index != -1)
@@ -204,12 +201,12 @@ namespace GrIso
                     continue;
 
                 // check count of neighbours
-                if (other_graph[matched_vertex].Count != some_graph[outside_vertex].Count)
+                if (other_graph[matched_vertex].Count() != some_graph[outside_vertex].Count())
                     continue;
 
                 // check compatibilty of potential match with current inside partial graph
                 int inside_count = 0;
-                for (int vertex_index = 0, vertext_count = some_graph[outside_vertex].Count; inside_count!=-1 && vertex_index < vertext_count; ++vertex_index)
+                for (int vertex_index = 0, vertext_count = some_graph[outside_vertex].Count(); inside_count!=-1 && vertex_index < vertext_count; ++vertex_index)
                 {
                     auto vertex = some_graph[outside_vertex][vertex_index];
                     if (vertex_array[vertex].other_vertex != None)
@@ -223,7 +220,7 @@ namespace GrIso
                 if (inside_count == -1)
                     continue;
 
-                for (int vertex_index = 0, vertext_count = other_graph[matched_vertex].Count; inside_count != -1 && vertex_index < vertext_count; ++vertex_index)
+                for (int vertex_index = 0, vertext_count = other_graph[matched_vertex].Count(); inside_count != -1 && vertex_index < vertext_count; ++vertex_index)
                 {
                     auto vertex = other_graph[matched_vertex][vertex_index];
                     if (vertex_array[vertex].some_vertex != None)
@@ -239,5 +236,5 @@ namespace GrIso
                 return true;
             }
         }
-    }
+	};
 }
