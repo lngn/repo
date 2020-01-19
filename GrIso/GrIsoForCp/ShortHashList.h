@@ -12,6 +12,17 @@ namespace GrIso
 		const ushort None = -1;
 
 	public:
+		ShortHashList() 
+		{
+		}
+
+		ShortHashList(ShortHashList && that)
+			: data_list(that.data_list), hash_list(that.hash_list)
+			, hash_size(that.data_size), data_size(that.data_size)
+			, hash_shift(that.hash_shift), hash_mul(that.hash_mul), hash_add(that.hash_add)
+		{
+		}
+
 		void Append(int item)
 		{
 			data_list.push_back((ushort)item);
@@ -20,6 +31,7 @@ namespace GrIso
 
 		bool Hash()
 		{
+			data_size = data_list.size();
 			if (Duplicates())
 				return false;
 			if (DenseHash())

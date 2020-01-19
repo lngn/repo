@@ -12,6 +12,14 @@ namespace GrIso
     class GraphVertex : public ShortHashList   
     {
 		public:
+			GraphVertex(const GraphVertex&) = delete;
+			GraphVertex& operator=(GraphVertex&) = delete;
+			GraphVertex() {}
+			GraphVertex(GraphVertex&& gv)
+				: ShortHashList(std::move(gv))
+			{
+
+			}
 	};
 
     class Graph: public std::vector<GraphVertex>    
@@ -20,6 +28,12 @@ namespace GrIso
         const int None = ushort(-1);
 		
 	public:
+		Graph(const Graph&) = delete;
+		Graph& operator=(Graph&) = delete;
+		Graph(Graph&& g)
+			:std::vector<GraphVertex>(std::move(g))
+		{
+		}
         Graph(int vertex_count)		
         {
 			resize(vertex_count);
@@ -46,7 +60,7 @@ namespace GrIso
             return This[some_vertex].Find(other_vertex);
         }
 
-        bool Compare(Graph graph)
+        bool Compare(const Graph & graph)
         {
             if (size() != graph.size())
                 return false;

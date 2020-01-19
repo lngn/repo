@@ -1,7 +1,19 @@
 ﻿#include "GraphIso.h"
+#include <chrono>
+#include <iostream>
 
 namespace GrIso
 {
+	double ElapsedTime()
+	{
+		using double_seconds = std::chrono::time_point<std::chrono::steady_clock, std::chrono::duration<double, std::ratio<1,1>>>;
+		static double_seconds last = std::chrono::steady_clock::now();
+		double_seconds curr = std::chrono::steady_clock::now();
+		double seconds = (curr-last).count();
+		last = curr;
+		return seconds;
+	}
+
 	class OkTests
 	{
 	public:
@@ -75,8 +87,8 @@ namespace GrIso
 		void TestGraphCompare(int vertex_count, int edge_count)
 		{
 			Graph graph = Graph::Generate(vertex_count, edge_count);
-			Graph clone = graph;
-			Assert(graph.Compare(clone));
+			//Graph clone = graph;
+			//Assert(graph.Compare(clone));
 			Assert(!graph.Compare(Graph::Generate(vertex_count, edge_count)));
 			std::vector<int> permutation = Graph::Permutate(vertex_count);
 			Graph perm = graph.Permutate( permutation);
@@ -157,11 +169,18 @@ namespace GrIso
 					}
 			Assert(noiso < total/100);
 		}
+
+		void TestGraphIso(uint rand_seed, int vertex_count, int edge_count)
+		{
+
+		}
 	};
 }
 
 void OkTest()
 {
+	GrIso::ElapsedTime();
+
 	GrIso::OkTests tests;
 	tests.TestGraphIso();
 	tests.TestGraphCompare();
