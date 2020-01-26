@@ -24,7 +24,7 @@ namespace GrIso
         int edge_top;
         Graph some_graph;
         Graph other_graph;
-
+        
         public List<int>TryIso(Graph some_graph, Graph other_graph)
         {
             if (some_graph.Count != other_graph.Count)
@@ -59,8 +59,6 @@ namespace GrIso
             var permutation = new List<int>(vertex_len);
             for (int i = 0; i < vertex_len; ++i)
                 permutation.Add(vertex_array[i].other_vertex);
-            if (!some_graph.Compare(other_graph, permutation))
-                throw new AbortException("This lies that it has found.");
             return permutation;
         }
 

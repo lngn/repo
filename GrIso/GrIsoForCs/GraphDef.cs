@@ -85,6 +85,16 @@ namespace GrIso
             return sb.ToString();
         }
 
+        public string ToFile()
+        {
+            var sb = new StringBuilder();
+            for (int i1 = 0, i2 = 1, c1 = Count; i1 < c1; ++i1, i2 = 0)
+                for (int c2 = this[i1].Count; i2 < c2; ++i2)
+                    sb.Append($"{i1}\t{this[i1][i2]}\r\n");
+
+            return sb.ToString();
+        }
+
         // Generate random connected graph.
         public static Graph Generate(int vertex_count, int edge_count)
         {

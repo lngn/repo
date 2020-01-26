@@ -87,8 +87,8 @@ namespace GrIso
 		void TestGraphCompare(int vertex_count, int edge_count)
 		{
 			Graph graph = Graph::Generate(vertex_count, edge_count);
-			//Graph clone = graph;
-			//Assert(graph.Compare(clone));
+			Graph clone(graph);
+			Assert(graph.Compare(clone));
 			Assert(!graph.Compare(Graph::Generate(vertex_count, edge_count)));
 			std::vector<int> permutation = Graph::Permutate(vertex_count);
 			Graph perm = graph.Permutate( permutation);
@@ -169,18 +169,28 @@ namespace GrIso
 					}
 			Assert(noiso < total/100);
 		}
-
-		void TestGraphIso(uint rand_seed, int vertex_count, int edge_count)
-		{
-
-		}
 	};
+}
+
+void TestGraphIso(unsigned rand_seed, int vertex_count, int edge_count, bool save)
+{
+	GrIso::Graph graph= GrIso::Graph::Generate(vertex_count, edge_count);
+	std::vector<int> permutation = GrIso::Graph::Permutate(vertex_count);
+	GrIso::Graph perm = graph.Permutate(permutation);
+	GrIso::ElapsedTime();
+	GrIso::GraphIso graph_iso(graph, perm);
+	double t = GrIso::ElapsedTime();
+	if (!graph.Compare(perm, graph_iso))
+		throw std::exception("no graph iso!");
+	printf("elapsed time %.3f", t);
+	if (!save) return;
+
+	graph.ToFile("..\\graph.dat");
+	perm.ToFile("..\\perm.dat");
 }
 
 void OkTest()
 {
-	GrIso::ElapsedTime();
-
 	GrIso::OkTests tests;
 	tests.TestGraphIso();
 	tests.TestGraphCompare();

@@ -267,5 +267,37 @@ namespace GrIso
                     }
             Assert(noiso < total/100);
         }
+
+        public static void TestGraphIso(uint rand_seed, int vertex_count, int edge_count, bool check)
+        {
+            Graph graph = Graph.Generate(vertex_count, edge_count);
+            var permutation = Graph.Permutate(vertex_count);
+            Graph perm = graph.Permutate(permutation);
+            var graph_iso = new GraphIso();
+
+            var stopwatch = Stopwatch.StartNew();
+            var result = graph_iso.TryIso(graph, perm);
+            double t = stopwatch.Elapsed.TotalSeconds;
+
+            if (!graph.Compare(perm, permutation))
+                throw new AbortException("no graph iso");
+            Console.WriteLine($"elapsed time {t}");
+            if (!check) return;
+
+            var str = new System.IO.StreamReader("..\\..\\..\\..\\graph.dat").ReadToEnd();
+            if (str != graph.ToFile())
+                throw new AbortException("wrong graph");
+            str = new System.IO.StreamReader("..\\..\\..\\..\\perm.dat").ReadToEnd();
+            if (str != perm.ToFile())
+                throw new AbortException("wrong graph");   
+        }
+
+        public static void TestOk()
+        {
+            var tests = new OkTests();
+            tests.TestGraphIso();
+            tests.TestGraphCompare();
+            tests.TestAllShortListCorrectness(39);
+        }
     }
 }

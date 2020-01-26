@@ -70,8 +70,6 @@ namespace GrIso
 			reserve(vertex_cnt);
             for (uint i = 0; i < vertex_cnt; ++i)
                 push_back(vertex_array[i].other_vertex);
-            if (!some_graph.Compare(other_graph, (std::vector<int>&)*this))
-                Abort("This lies that it has found.");
         }
 
         // Select next outside vertex for partial graph

@@ -9,12 +9,14 @@
 
 int main()
 {
-	void OkTest();
+	void TestGraphIso(unsigned rand_seed, int vertex_count, int edge_count, bool save);
+	TestGraphIso(333, 100, 1000, true); std::cin.get(); return 0;
+
+	void OkTest(); return 0;
+
 	void TestFindHash(int rand_seed, int max_number, int test_count, int hash_count, bool randquick_nums, bool randquick_hash);
 	void TestFindDoubleHash(int rand_seed, int max_number, int test_count, int hash_count, int max_rehash, bool randquick_nums, bool randquick_hash);
 	void TestStatHash(int rand_seed, int max_number, int test_count, int hash_count, int stat_count, bool randquick_nums, bool randquick_hash);
-
-	OkTest();
 
 	if (0)
 	for (int i = 0; i < 111; ++i)

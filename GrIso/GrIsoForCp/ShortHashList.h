@@ -12,9 +12,8 @@ namespace GrIso
 		const ushort None = -1;
 
 	public:
-		ShortHashList() 
-		{
-		}
+		ShortHashList() = default;
+		ShortHashList(const ShortHashList&) = default;
 
 		ShortHashList(ShortHashList && that)
 			: data_list(that.data_list), hash_list(that.hash_list)
@@ -22,6 +21,7 @@ namespace GrIso
 			, hash_shift(that.hash_shift), hash_mul(that.hash_mul), hash_add(that.hash_add)
 		{
 		}
+
 
 		void Append(int item)
 		{

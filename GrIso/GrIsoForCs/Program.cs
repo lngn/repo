@@ -7,25 +7,9 @@ namespace GrIsoForCs
     {
         static void Main(string[] args)
         {
-            var tests = new OkTests(1919);
-            //tests.TestAllShortListCorrectness(39);
-            //tests.TestGraphCompare();
-            tests.TestGraphIso();
-            
-            Console.WriteLine("Done");
-            Console.ReadKey();
-            return;
+            OkTests.TestGraphIso(333, 100, 1000, true); Console.Read();  return;
 
-            //new OkTests().PrintRandGraphPermutation(10, 16);
-            //new OkTests().PrintRandGraphPermutation(16, 32);
-            //new OkTests().TestGraphCompare();
-            new OkTests().TestGraphIso();
-            //new OkTests().TestOneShortListCorrectness(32, 992, 2883102456, 548308047);
-
-            //new OkTests(559).TestAllShortListCorrectness(39);
-            //new OkTests(5589).TestShortListPerformace(39);
-            Console.WriteLine("Done");
-            Console.ReadKey();
+            OkTests.TestOk();
         }
     }
 }

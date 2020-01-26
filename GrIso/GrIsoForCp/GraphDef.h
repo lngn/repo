@@ -4,6 +4,8 @@
 #include <exception>
 #include <set>
 #include <tuple>
+#include <string>
+#include <fstream>
 #define This (*this)
 
 namespace GrIso
@@ -12,7 +14,7 @@ namespace GrIso
     class GraphVertex : public ShortHashList   
     {
 		public:
-			GraphVertex(const GraphVertex&) = delete;
+			explicit GraphVertex(const GraphVertex&) = default;
 			GraphVertex& operator=(GraphVertex&) = delete;
 			GraphVertex() {}
 			GraphVertex(GraphVertex&& gv)
@@ -28,7 +30,7 @@ namespace GrIso
         const int None = ushort(-1);
 		
 	public:
-		Graph(const Graph&) = delete;
+		explicit Graph(const Graph&) = default;
 		Graph& operator=(Graph&) = delete;
 		Graph(Graph&& g)
 			:std::vector<GraphVertex>(std::move(g))
@@ -93,6 +95,28 @@ namespace GrIso
            
 			return s;
         }
+
+		std::string ToFile()
+		{
+			std::string s;
+			for (uint i1 = 0, i2 = 1, c1 = size(); i1 < c1; ++i1, i2 = 0)
+				for (uint c2 = This[i1].Count(); i2 < c2; ++i2)
+				{
+					char buf[32];
+					sprintf_s(buf, "%d\t%d\r\n", i1, This[i1][i2]);
+					s += buf;
+				}
+			return s;
+		}
+
+		void ToFile(const char* path)
+		{
+			std::ofstream stream;
+			stream.open(path, std::ios_base::out | std::ios_base::binary);
+			const std::string & s = ToFile();
+			stream.write(s.c_str(), s.size());
+			stream.close();
+		}
 
         // Generate random connected graph.
         static Graph Generate(int vertex_count, int edge_count)
