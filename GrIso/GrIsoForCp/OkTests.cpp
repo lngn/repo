@@ -4,6 +4,8 @@
 
 namespace GrIso
 {
+	RandQuick RandQuickShared;
+
 	double ElapsedTime()
 	{
 		using double_seconds = std::chrono::time_point<std::chrono::steady_clock, std::chrono::duration<double, std::ratio<1,1>>>;
@@ -172,11 +174,44 @@ namespace GrIso
 	};
 }
 
-void TestGraphIso(unsigned rand_seed, int vertex_count, int edge_count, bool save)
+void TestGraphIso(unsigned rand_seed, int vertex_count, int edge_count)
 {
+	printf("generating graph\n");
+	GrIso::RandQuickShared = GrIso::RandQuick(rand_seed);
+	GrIso::Graph graph = GrIso::Graph::Generate(vertex_count, edge_count);
+
+	double m = 0;
+	for (int c = 1; c < 1000; ++c)
+	{
+		GrIso::ElapsedTime();
+		printf("generating perm seed %u", GrIso::RandQuickShared.last);
+		GrIso::Graph perm = graph.Permutate(GrIso::Graph::Permutate(vertex_count));
+		printf("  time%.4f trying iso\n", GrIso::ElapsedTime());
+
+		GrIso::ElapsedTime();
+		GrIso::GraphIso graph_iso(graph, perm);
+		double t = GrIso::ElapsedTime();
+		if (!graph.Compare(perm, graph_iso))
+			throw std::exception("no graph iso!");
+		if (t > m) m = t;
+		printf("%d %.4f %.4f\n", c, t, m);
+	}
+}
+
+void TestGraphIso(unsigned rand_seed_graph, unsigned rand_seed_perm, int vertex_count, int edge_count, bool save)
+{
+	printf("generating graph\n");
+	if (rand_seed_graph != 0)
+		GrIso::RandQuickShared.last = rand_seed_graph;
 	GrIso::Graph graph= GrIso::Graph::Generate(vertex_count, edge_count);
-	std::vector<int> permutation = GrIso::Graph::Permutate(vertex_count);
-	GrIso::Graph perm = graph.Permutate(permutation);
+
+	printf("generating perm\n");
+	if (rand_seed_perm != 0)
+		GrIso::RandQuickShared.last = rand_seed_perm;
+	GrIso::Graph perm = graph.Permutate(GrIso::Graph::Permutate(vertex_count));
+
+
+	printf("trying iso\n");
 	GrIso::ElapsedTime();
 	GrIso::GraphIso graph_iso(graph, perm);
 	double t = GrIso::ElapsedTime();

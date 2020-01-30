@@ -20,5 +20,5 @@ namespace GrIso
         int Next(int min, int max) { double n = RandQuick1Max * Next() * (max - min + 1) + min; return (int)n; }
 	};
 
-	RandQuick RandQuickShared;
+	extern RandQuick RandQuickShared;
 }

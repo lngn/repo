@@ -233,7 +233,7 @@ namespace GrIso
             return true;
         }
 
-        Graph Permutate(std::vector<int> & permutation)
+        Graph Permutate(const std::vector<int> & permutation)
         {
             Graph graph(size());
             for (uint i1 = 0; i1 < size(); ++i1)

@@ -268,9 +268,14 @@ namespace GrIso
             Assert(noiso < total/100);
         }
 
-        public static void TestGraphIso(uint rand_seed, int vertex_count, int edge_count, bool check)
+        public static void TestGraphIso(uint rand_seed_graph, uint rand_seed_perm, int vertex_count, int edge_count, bool check)
         {
+            if (rand_seed_graph !=0)
+                RandQuick.Shared.last = rand_seed_graph;
             Graph graph = Graph.Generate(vertex_count, edge_count);
+
+            if (rand_seed_perm != 0)
+                RandQuick.Shared.last = rand_seed_perm;
             var permutation = Graph.Permutate(vertex_count);
             Graph perm = graph.Permutate(permutation);
             var graph_iso = new GraphIso();

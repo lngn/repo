@@ -9,8 +9,11 @@
 
 int main()
 {
-	void TestGraphIso(unsigned rand_seed, int vertex_count, int edge_count, bool save);
-	TestGraphIso(333, 100, 1000, true); std::cin.get(); return 0;
+	void TestGraphIso(unsigned rand_seed, int vertex_count, int edge_count);
+	//TestGraphIso(34787, 1000, 700 * 1000 / 2); std::cin.get(); return 0;
+
+	void TestGraphIso(unsigned rand_seed_graph, unsigned rand_seed_perm, int vertex_count, int edge_count, bool save);
+	TestGraphIso(34787, 1694294875, 1000, 700*1000/2, true); std::cin.get(); return 0;
 
 	void OkTest(); return 0;
 
