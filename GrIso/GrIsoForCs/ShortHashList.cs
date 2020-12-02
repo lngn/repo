@@ -6,7 +6,7 @@ namespace GrIso
     class ShortHashList
     {
         static RandQuick RandQuick = RandQuick.Shared;
-        const int max_hash_check = 1024;
+        const int max_hash_check = 128;
         public const ushort None = ushort.MaxValue;
 
         protected ushort[] data_list = new ushort[] { None, None, None, None };

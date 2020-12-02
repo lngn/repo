@@ -141,9 +141,11 @@ namespace GrIso
 
 		void TestGraphIso()
 		{
+			const int repeat_for_graph_size = 10;
+
 			for (int vertex_count = 3; vertex_count < 10; ++vertex_count)
 				for (int edge_count = vertex_count; edge_count < vertex_count * (vertex_count - 1) / 2; ++edge_count)
-					for (int count = 0; count < 50; ++count)
+					for (int count = 0; count < repeat_for_graph_size; ++count)
 					{
 						if (count==0)
 							printf("%d %d\n", vertex_count, edge_count);
@@ -152,7 +154,7 @@ namespace GrIso
 
 			for (int vertex_count = 10; vertex_count < 16; ++vertex_count)
 				for (int edge_count = vertex_count * (vertex_count - 1) / 4; edge_count < vertex_count * (vertex_count - 1) * 3 / 4; ++edge_count)
-					for (int count = 0; count < 50; ++count)
+					for (int count = 0; count < repeat_for_graph_size; ++count)
 					{
 						if (count == 0)
 							printf("%d %d\n", vertex_count, edge_count);
@@ -162,7 +164,7 @@ namespace GrIso
 			int noiso = 0, total = 0;
 			for (int vertex_count = 10; vertex_count < 16; ++vertex_count)
 				for (int edge_count = vertex_count*(vertex_count-1)/4; edge_count < vertex_count * (vertex_count - 1)*3 /4; ++edge_count)
-					for (int count = 0; count < 50; ++count)
+					for (int count = 0; count < repeat_for_graph_size; ++count)
 					{
 						if (count == 0)
 							printf("%d %d\n", vertex_count, edge_count);

@@ -13,7 +13,7 @@ int main()
 	//TestGraphIso(34787, 1000, 700 * 1000 / 2); std::cin.get(); return 0;
 
 	void TestGraphIso(unsigned rand_seed_graph, unsigned rand_seed_perm, int vertex_count, int edge_count, bool save);
-	TestGraphIso(34787, 1694294875, 1000, 700*1000/2, true); std::cin.get(); return 0;
+	TestGraphIso(313, 313, 5000, 200 * 5000 / 2, true); std::cin.get(); return 0;
 
 	void OkTest(); return 0;
 

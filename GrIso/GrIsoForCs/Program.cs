@@ -7,9 +7,9 @@ namespace GrIsoForCs
     {
         static void Main(string[] args)
         {
-            OkTests.TestGraphIso(34787, 1694294875, 1000, 700 * 1000 / 2, true); Console.Read();  return;
+            OkTests.TestGraphIso(313, 313, 5000, 200*5000 / 2, true); Console.Read();  return;
 
-            OkTests.TestOk();
+            //OkTests.TestOk();
         }
     }
 }

@@ -8,7 +8,7 @@ namespace GrIso
 {
     class ShortHashList
     {
-        const int max_hash_check = 64;
+        const int max_hash_check = 128;
 		const ushort None = -1;
 
 	public:
