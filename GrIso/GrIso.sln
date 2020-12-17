@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.102
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrIsoForCs", "GrIsoForCs\GrIsoForCs.csproj", "{98A54D7D-F935-4EED-BAD8-F0CECE4D4E30}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrIsoForCs", "GrIsoForCsVersusCp\GrIsoForCsVersusCp.csproj", "{98A54D7D-F935-4EED-BAD8-F0CECE4D4E30}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GrIsoForCp", "GrIsoForCp\GrIsoForCp.vcxproj", "{2CE8F768-104A-4F0B-B091-20D60560F11E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GrIsoForCp", "GrIsoForCpVersusCs\GrIsoForCpVersusCs.vcxproj", "{2CE8F768-104A-4F0B-B091-20D60560F11E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
