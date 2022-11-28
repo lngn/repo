@@ -14,6 +14,8 @@ namespace GrIso
         public uint RawNext() { last = 1664525 * last + 1013904223; return last; }
         public int Next(int max) { double n = RandQuick1Max * RawNext() * (1 + max); return (int)n; }
         public int Next(int min, int max) { double n = RandQuick1Max * RawNext() * (max - min + 1) + min; return (int)n; }
+        public double Next(double max) { double n = RandQuick1Max * RawNext() *  max; return n; }
+        public double Next(double min, double max) { double n = RandQuick1Max * RawNext() * (max - min)+ min; return n; }
 
         public static RandQuick Shared = new RandQuick();
     }

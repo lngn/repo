@@ -5,35 +5,108 @@ using System.Text;
 
 namespace GrIso
 {
-    
-    class Graph: List<HashSet<int>>    
+
+    class Graph : List<HashSet<int>>
     {
-        
+
         static RandQuick rand_quick = RandQuick.Shared;
         const int None = -1;
 
         public Graph(int vertex_count)
-            :base(vertex_count)
+            : base(vertex_count)
         {
             for (int i = 0; i < vertex_count; ++i)
                 Add(new HashSet<int>());
         }
-        public void Add(int some_vertex, int other_vertex)
-        {
-            this[some_vertex].Add(other_vertex);
-            this[other_vertex].Add(some_vertex);
-        }
-        
+
+
         public Graph Clone()
         {
             var clone = new Graph(Count);
             for (int i = 0; i < Count; ++i)
                 clone[i] = new HashSet<int>(this[i]);
+            clone.edges_count = edges_count;
             return clone;
         }
+
+        private int edges_count;
+        public int EdgesCount => edges_count;
+
+        public struct Edge
+        {
+            public int some_vertex;
+            public int other_vertex;
+        }
+
+        public IEnumerable<Edge> Edges {
+            get 
+            {
+                Edge edge= new Edge { };
+                for (var some_vertex = 0; some_vertex < Count; ++some_vertex)
+                    foreach (var other_vertex in this[some_vertex])
+                        if (some_vertex < other_vertex)
+                        {
+                            edge.some_vertex = some_vertex;
+                            edge.other_vertex = other_vertex;
+                            yield return edge;
+                        }
+            }
+            set
+            {
+                foreach (var edge in value)
+                {
+                    this[edge.some_vertex].Add(edge.other_vertex);
+                    this[edge.other_vertex].Add(edge.some_vertex);
+                }
+            }
+        }
+
+        public bool Find(Edge edge)
+        {
+            return this[edge.some_vertex].Contains(edge.other_vertex);
+        }
+
+        public void Add(Edge edge)
+        {
+            Add(edge.some_vertex, edge.other_vertex);
+        }
+
+        public void Remove(Edge edge)
+        {
+            Remove(edge.some_vertex, edge.other_vertex);
+        }
+
+        public Graph Clone(Graph graph)
+        {
+            for (int vertex_1 = 0; vertex_1 < Count; ++vertex_1)
+                foreach (int vertex_2 in this[vertex_1])
+                    graph.Add(vertex_1, vertex_2);
+            return graph;
+        }
+
         public bool Find(int some_vertex, int other_vertex)
         {
             return this[some_vertex].Contains(other_vertex);
+        }
+
+        public void Add(int some_vertex, int other_vertex)
+        {
+            if (!this[some_vertex].Contains(other_vertex))
+            {
+                this[some_vertex].Add(other_vertex);
+                this[other_vertex].Add(some_vertex);
+                ++edges_count;
+            }
+        }
+
+        public void Remove(int some_vertex, int other_vertex)
+        {
+            if (this[some_vertex].Contains(other_vertex))
+            {
+                this[some_vertex].Remove(other_vertex);
+                this[other_vertex].Remove(some_vertex);
+                --edges_count;
+            }
         }
 
         public bool Compare(Graph graph)
@@ -82,7 +155,7 @@ namespace GrIso
                 permutation.Add(i);
             for (int i1=0; i1< vertex_count - 1; ++i1)
             {
-                int i2 = rand_quick.Next(i1, vertex_count - i1);
+                int i2 = rand_quick.Next(i1, vertex_count -1 );
                 int i3 = permutation[i1];
                 permutation[i1] = permutation[i2];
                 permutation[i2] = i3;
@@ -91,14 +164,8 @@ namespace GrIso
             return permutation;
         }
 
-        // Generate random connected graph.
-        public static Graph Generate(int vertex_count, int edge_count)
+        public static Graph GenerateTree(int vertex_count)
         {
-            if (edge_count < vertex_count - 1)
-                Program.Abort("too little edge - only connected graph");
-            if (edge_count > vertex_count * (vertex_count - 1) / 2)
-                Program.Abort("too many edge - symetric graph");
-
             var graph = new Graph(vertex_count);
             //  create random tree to make graph connected
             var subtree_vertex = new List<int>();
@@ -120,10 +187,31 @@ namespace GrIso
                 subtree_vertex[i2] = i1;
             }
 
+            return graph;
+        }
+
+        // Generate random connected graph.
+        public static Graph Generate(int vertex_count, int edge_count)
+        {
+            return Generate(vertex_count, edge_count, GenerateTree(vertex_count));
+        }
+
+        // Generate random connected graph.
+        public static Graph Generate(int vertex_count, int edge_count, Graph subgraph)
+        {
+            if (edge_count < vertex_count - 1)
+                Program.Abort("too little edge - only connected graph");
+            if (edge_count > vertex_count * (vertex_count - 1) / 2)
+                Program.Abort("too many edge - symetric graph");
+            if (edge_count < subgraph.Count)
+                Program.Abort("too big subgraph");
+
+            var graph = subgraph.Clone();
+            
             // not too dense graph rand included edge with 1/2 chance of not already used
             if (edge_count < vertex_count * (vertex_count - 1) / 4)
             {    
-                for (int i = vertex_count - 1; i < edge_count; ++i)
+                while ( graph.edges_count < edge_count)
                 {
                     int i1 = rand_quick.Next(0, vertex_count - 1);
                     int i2 = rand_quick.Next(0, vertex_count - 1);

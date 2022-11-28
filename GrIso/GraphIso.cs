@@ -31,6 +31,10 @@ namespace GrIso
         Graph some_graph;
         Graph other_graph;
 
+        // Calculated cost of this graph iso ( exactly numver of checked verticies)
+        double graph_iso_cost;
+        public double GraphIsoCost => graph_iso_cost;
+
         public List<int> TryIso(Graph some_graph, Graph other_graph)
         {
             if (some_graph.Count != other_graph.Count)
@@ -123,6 +127,8 @@ namespace GrIso
                 vertex_array[vertex].some_vertex = None;
                 vertex_array[vertex].other_vertex = None;
             }
+
+            graph_iso_cost = 0;
             edge_top = 0;
             edge_stack[0].matched_vertex = TryFirstMatch();
             EdgeData edge_data = edge_stack[0];
@@ -134,6 +140,9 @@ namespace GrIso
                 while (matched = edge_data.matched_vertex.MoveNext())
                     if (TryNextMatch(edge_data.inside_vertex, edge_data.outside_vertex, edge_data.matched_vertex.Current))
                         break;
+
+                ++graph_iso_cost;
+
                 if (matched)
                 {
                     vertex_array[edge_data.outside_vertex].other_vertex = edge_data.matched_vertex.Current;

@@ -7,7 +7,7 @@ namespace GrIso
     class GraphTests
     {
         RandQuick rand_quick;
-        
+
         void Assert(bool b)
         {
             if (!b)
@@ -17,7 +17,7 @@ namespace GrIso
             }
         }
 
-        public GraphTests(uint rand_seed=1313)
+        public GraphTests(uint rand_seed = 1313)
         {
             rand_quick = new RandQuick(rand_seed);
         }
@@ -25,20 +25,30 @@ namespace GrIso
         public void TestGraphCompare(int vertex_count, int edge_count)
         {
             Graph graph = Graph.Generate(vertex_count, edge_count);
+            Assert(graph.EdgesCount == edge_count);
+            var count_edges = 0;
+            foreach (var edge in graph.Edges)
+            {
+                ++count_edges;
+                Assert(graph.Find(edge));
+                Assert(graph.Find(edge.some_vertex, edge.other_vertex));
+                Assert(graph.Find(edge.other_vertex, edge.some_vertex));
+            }
+            Assert(count_edges == edge_count);
             Assert(graph.Compare(graph.Clone()));
             Assert(!graph.Compare(Graph.Generate(vertex_count, edge_count)));
             List<int> permutation = Graph.Permutate(vertex_count);
-            Graph perm = graph.Permutate( permutation);
+            Graph perm = graph.Permutate(permutation);
             Assert(!graph.Compare(perm));
-            Assert(graph.Compare(perm,permutation));
+            Assert(graph.Compare(perm, permutation));
         }
 
         public void TestGraphCompare()
         {
-            for (int c=25;c>0;--c)
-            for (int vertex_count = 10; vertex_count < 24; ++vertex_count)
-                for (int edge_count = vertex_count * (vertex_count - 1) / 8; edge_count < vertex_count * (vertex_count - 1) / 4; ++edge_count)
-                    TestGraphCompare(vertex_count, edge_count);
+            for (int c = 25; c > 0; --c)
+                for (int vertex_count = 10; vertex_count < 24; ++vertex_count)
+                    for (int edge_count = vertex_count * (vertex_count - 1) / 8; edge_count < vertex_count * (vertex_count - 1) / 4; ++edge_count)
+                        TestGraphCompare(vertex_count, edge_count);
         }
 
         public void PrintRandGraphPermutation(int vertex_count, int edge_count)
@@ -47,7 +57,7 @@ namespace GrIso
             List<int> permutation = Graph.Permutate(vertex_count);
             Graph perm = graph.Permutate(permutation);
             Assert(!graph.Compare(perm));
-            Assert(graph.Compare( perm, permutation));
+            Assert(graph.Compare(perm, permutation));
             Debug.WriteLine(graph.ToString());
             Debug.WriteLine(perm.ToString());
         }
@@ -61,17 +71,18 @@ namespace GrIso
             //Debug.WriteLine(graph.ToString());
             //Debug.WriteLine(perm.ToString());
             List<int> result = new GraphIso().TryIso(graph, perm);
-             Assert(graph.Compare(perm, result));
+            Assert(graph.Compare(perm, result));
         }
 
-        public int TestGraphNoIso(int vertex_count, int edge_count)
+        public void TestGraphNoIso(int vertex_count, int edge_count)
         {
             //Debug.WriteLine($"rand seed {RandQuick.Shared.last}");
-            Graph graph = Graph.Generate(vertex_count, edge_count);
+            Graph some_graph = Graph.Generate(vertex_count, edge_count);
+            Graph other_graph = Graph.Generate(vertex_count, edge_count);
             //Debug.WriteLine(graph.ToString());
             //Debug.WriteLine(perm.ToString());
-            List<int> result = new GraphIso().TryIso(graph, Graph.Generate(vertex_count, edge_count));
-            return result == null ? 1 : 0;
+            var perm = new GraphIso().TryIso(some_graph, other_graph);
+            Assert(perm == null || some_graph.Compare(other_graph, perm));
         }
 
         public void TestGraphIso()
@@ -82,13 +93,13 @@ namespace GrIso
                 for (int edge_count = vertex_count; edge_count < vertex_count * (vertex_count - 1) / 2; ++edge_count)
                     for (int count = 0; count < repeat_for_graph_size; ++count)
                     {
-                        if (count==0)
+                        if (count == 0)
                             Console.WriteLine($"{vertex_count} {edge_count}");
                         TestGraphIso(vertex_count, edge_count);
                     }
 
             for (int vertex_count = 10; vertex_count < 16; ++vertex_count)
-                for (int edge_count = vertex_count * (vertex_count - 1) / 4; edge_count < vertex_count * (vertex_count - 1)  / 2 ; ++edge_count)
+                for (int edge_count = vertex_count * (vertex_count - 1) / 4; edge_count < vertex_count * (vertex_count - 1) / 2; ++edge_count)
                     for (int count = 0; count < repeat_for_graph_size; ++count)
                     {
                         if (count == 0)
@@ -96,22 +107,19 @@ namespace GrIso
                         TestGraphIso(vertex_count, edge_count);
                     }
 
-            int noiso = 0, total = 0;
             for (int vertex_count = 10; vertex_count < 16; ++vertex_count)
-                for (int edge_count = vertex_count*(vertex_count-1)/4; edge_count < vertex_count * (vertex_count - 1) / 2; ++edge_count)
+                for (int edge_count = vertex_count * (vertex_count - 1) / 4; edge_count < vertex_count * (vertex_count - 1) / 2; ++edge_count)
                     for (int count = 0; count < repeat_for_graph_size; ++count)
                     {
                         if (count == 0)
                             Console.WriteLine($"{vertex_count} {edge_count}");
-                        ++total;
-                        noiso += TestGraphNoIso(vertex_count, edge_count);
+                        TestGraphNoIso(vertex_count, edge_count);
                     }
-            Assert(noiso < total/100);
         }
 
         public static void TestGraphIso(uint rand_seed_graph, uint rand_seed_perm, int vertex_count, int edge_count, bool print)
         {
-            if (rand_seed_graph !=0)
+            if (rand_seed_graph != 0)
                 RandQuick.Shared.last = rand_seed_graph;
             Graph graph = Graph.Generate(vertex_count, edge_count);
 
@@ -144,6 +152,14 @@ namespace GrIso
             var tests = new GraphTests();
             tests.TestGraphCompare();
             tests.TestGraphIso();
+        }
+
+        public static void TestHarderIso()
+        {
+            new GraphHarderIso
+            {
+
+            };
         }
     }
 }
