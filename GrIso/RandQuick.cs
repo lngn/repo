@@ -19,4 +19,12 @@ namespace GrIso
 
         public static RandQuick Shared = new RandQuick();
     }
+
+    struct HashQuick
+    {
+        public uint last;
+        public int Hash(uint value) { last = (1664525 * last + 1013904223) ^ value; return (int)last; }
+        public int Hash(int value) { last = (1664525 * last + 1013904223) ^ (uint)value; return (int)last; }
+        public int Hash() { return (int)last; }
+    }
 }

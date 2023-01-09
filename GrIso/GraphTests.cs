@@ -152,14 +152,6 @@ namespace GrIso
             var tests = new GraphTests();
             tests.TestGraphCompare();
             tests.TestGraphIso();
-        }
-
-        public static void TestHarderIso()
-        {
-            new GraphHarderIso
-            {
-
-            };
-        }
+        }        
     }
 }

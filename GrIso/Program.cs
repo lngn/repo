@@ -18,9 +18,15 @@ namespace GrIso
 
         static void Main(string[] args)
         {
+            //GraphHarderIsoTests.RunRandomIso(); return;
+
+            //GraphHarderIsoTests.RunHarderIso();return;
+
+            GraphHarderIsoTests.TestHarderIso(); return;
+
             //GraphTests.TestGraphIso(313, 313, 5000, 200*5000 / 2, false); Console.Read();  return;
 
-            GraphTests.TestOk();
+            //GraphTests.TestOk();
         }
     }
 }

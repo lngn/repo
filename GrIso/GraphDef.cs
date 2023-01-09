@@ -109,8 +109,25 @@ namespace GrIso
             }
         }
 
+        public override bool Equals(object obj)
+        {
+            return Compare(obj as Graph);
+        }
+
+        public override int GetHashCode()
+        {
+            var hash_quick = new HashQuick();
+            foreach (var vertex in this )
+                hash_quick.Hash(vertex.Count);
+            return hash_quick.Hash();
+        }
+
         public bool Compare(Graph graph)
         {
+            if (this == graph)
+                return true;
+            if (this == null || graph == null)
+                return false;
             if (Count != graph.Count)
                 return false;
 
@@ -196,6 +213,35 @@ namespace GrIso
             return Generate(vertex_count, edge_count, GenerateTree(vertex_count));
         }
 
+        public static Graph Generate(int vertex_count, int edge_count, int subvertex_count, int subedge_count)
+        {
+            var graph = GenerateTree(vertex_count);
+
+            var subgraph = Graph.Generate(subvertex_count, subedge_count);
+            var permutation = new int[vertex_count];
+            for (var i = 0; i < vertex_count; ++i)
+                permutation[i] = i;
+
+           while(graph.EdgesCount < edge_count)
+            {
+                for ( var i1=0;i1<subvertex_count;++i1)
+                {
+                    var i2 = rand_quick.Next(i1, vertex_count - 1);
+                    var i3 = permutation[i1];
+                    permutation[i1] = permutation[i2];
+                    permutation[i2] = i3;
+                }
+                foreach (var edge in subgraph.Edges)
+                {
+                    graph.Add(permutation[edge.some_vertex], permutation[edge.other_vertex]);
+                    if (graph.EdgesCount >= edge_count)
+                        break;
+                }
+            }
+
+            return graph;
+        }
+
         // Generate random connected graph.
         public static Graph Generate(int vertex_count, int edge_count, Graph subgraph)
         {
@@ -275,5 +321,4 @@ namespace GrIso
 
             return graph;
         }
-    };
-}
+    }}
