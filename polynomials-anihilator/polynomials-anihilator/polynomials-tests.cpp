@@ -65,9 +65,20 @@ void test_arithmetic()
 	std::string s;
 
 	r = x + x;
-	//r = x ^ 2;
 	s = r.string();
 	assert(s == "2*x");
+
+	r = -x - 2;
+	s = r.string();
+	assert(s == "-x-2");
+
+	r = x*x;
+	s = r.string();
+	assert(s == "x2");
+
+	r = x ^ 3;
+	s = r.string();
+	assert(s == "x3");
 }
 
 void test_polynomials()

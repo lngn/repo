@@ -200,14 +200,32 @@ public:
         return result;
     }
 
+    polynomial_coefficient operator-() const
+    {
+        polynomial_coefficient<exponent_number, coefficient_number> result = -this->coefficient;
+        result.exponents = this->exponents;
+        return result;
+    }
+
+    polynomial_coefficient operator-(const polynomial_coefficient& that) const
+    {
+        polynomial_coefficient<exponent_number, coefficient_number> result = this->coefficient - that.coefficient;
+        result.exponents = this->exponents;
+        return result;
+    }
+
     polynomial_coefficient operator*(const polynomial_coefficient & that) const
     {
         polynomial_coefficient<exponent_number, coefficient_number> result(coefficient * that.coefficient);
         auto thisI = exponents.begin(), thisE = exponents.end(), thatI = that.exponents.begin(), thatE = that.exponents.end();
         while (thisI != thisE && thatI != thatE)
         {
-            if (*thisI == *thatI)
+            if (thisI->variable == thatI->variable)
+            {
                 result.exponents.emplace_back(thisI->variable, thisI->exponent + thatI->exponent);
+                ++thisI;
+                ++thatI;
+            }
             else if (thisI->variable < thatI->variable)
             {
                 result.exponents.emplace_back(thatI->variable, thatI->exponent);
@@ -244,19 +262,18 @@ public:
     polynomial(coefficient_number coefficient)
         : std::vector<polynomial_coefficient<exponent_number, coefficient_number>>(1, coefficient)
     {
-        normalize();
     };
 
     polynomial(polynomial_coefficient<exponent_number, coefficient_number> coefficient)
         : std::vector<polynomial_coefficient<exponent_number, coefficient_number>>(1,coefficient)
     {
-        normalize();
+        normalize(true);
     };
 
     polynomial(std::vector<polynomial_coefficient<exponent_number, coefficient_number>> && coefficients)
         : std::vector<polynomial_coefficient<exponent_number, coefficient_number>>(coefficients)
     {
-        normalize();
+        normalize(true);
     }
 
     void normalize(bool normalize_coefficients = false)
@@ -365,9 +382,15 @@ public:
                 ++thatI;
             }
             else if (thisI->exponents < thatI->exponents)
-                ++thatI;                
-            else             
+            {
+                result.push_back(*thatI);
+                ++thatI;
+            }
+            else
+            {
+                result.push_back(*thisI);
                 ++thisI;
+            }
         }
         while (thisI != thisE)
         {
@@ -377,6 +400,54 @@ public:
         while (thatI != thatE)
         {
             result.push_back(*thatI);
+            ++thatI;
+        }
+        return result;
+    }
+
+    polynomial<exponent_number, coefficient_number> operator-() const
+    {
+        polynomial<exponent_number, coefficient_number> result;
+        auto thisI = this->begin(), thisE = this->end();
+        while (thisI != thisE)
+        {
+            result.push_back(-*thisI);
+            ++thisI;
+        }        
+        return result;
+    }
+
+    polynomial<exponent_number, coefficient_number> operator-(const polynomial<exponent_number, coefficient_number>& that) const
+    {
+        polynomial<exponent_number, coefficient_number> result;
+        auto thisI = this->begin(), thisE = this->end(), thatI = that.begin(), thatE = that.end();
+        while (thisI != thisE && thatI != thatE)
+        {
+            if (thisI->exponents == thatI->exponents)
+            {
+                result.emplace_back(*thisI - *thatI);
+                ++thisI;
+                ++thatI;
+            }
+            else if (thisI->exponents < thatI->exponents)
+            {
+                result.push_back(-*thatI);
+                ++thatI;
+            }
+            else
+            {
+                result.push_back(*thisI);
+                ++thisI;
+            }
+        }
+        while (thisI != thisE)
+        {
+            result.push_back(*thisI);
+            ++thisI;
+        }
+        while (thatI != thatE)
+        {
+            result.push_back(-*thatI);
             ++thatI;
         }
         return result;
@@ -404,7 +475,7 @@ public:
         {
             power2 = power2 * power2;
             if (exponent & 1)
-                result = result + power2;
+                result = result * power2;
         }
         return result;
     }
