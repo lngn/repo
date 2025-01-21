@@ -43,10 +43,6 @@ class polynomial_exponents: public std::vector<polynomial_exponent<exponent_numb
 {
 public:
     polynomial_exponents() {}
-    polynomial_exponents(const polynomial_exponent<exponent_number>& exponent)
-        : std::vector<polynomial_exponent<exponent_number>>(1,exponent)
-    {
-    }
     polynomial_exponents(std::vector<polynomial_exponent<exponent_number>>&& exponents)
         : std::vector<polynomial_exponent<exponent_number>>(exponents)
     {
@@ -56,13 +52,10 @@ public:
     {
         // order variables decreasing
         std::sort(this->begin(), this->end(), [](const auto& ala, const auto& bob) { return bob < ala;  });
-        // summed all exponents
-        total = 0;
         // three iterators read, write, end to compress multi occured variable e.g x^2*y^3*x^2
         auto itR = this->begin(), itW = itR, itE = this->end();
         if (itR == itE)
             return;
-        total += itR->exponent;
         if (++itR == itE)
             return;
         // scan for first reoccuring variable ( due to sort this could be only next in sequence)
@@ -73,7 +66,6 @@ public:
             {
                 do
                 {
-                    total += itR->exponent;
                     if (itW->variable == itR->variable)
                         itW->exponent += itR->exponent;
                     else
@@ -84,39 +76,42 @@ public:
                 this->erase(++itW, itE);
                 break;
             }
-            total += itR->exponent;
             itW = itR;
         } while (++itR != itE);
     }
 
-    bool normalized()
+    bool normalized() const
     {
-        // summed all exponents
-        int total = 0;
         // three iterators read, write, end to compress multi occured variable e.g x^2*y^3*x^2
         auto itR = this->begin(), itW = itR, itE = this->end();
 
-        if (itR == itE)
-            return total == this->total;
-        total += itR->exponent;
-        if (++itR == itE)
-            return total == this->total;
+        if (itR == itE || ++itR == itE)
+            return true;
         // scan for first reoccuring variable ( due to sort this could be only next in sequence)
         do
         {
-            total += itR->exponent;
             if (*itW <= *itR)
                 return false;
         } while ( ++itW,++itR != itE );
 
-        return total == this->total;
+        return true;
+    }
+
+    // total (summed) exponents
+    int total() const
+    {
+        int total = 0;
+        for (const auto& exponent : *this)
+            total += exponent.exponent;
+        return total;
     }
 
     bool operator<(const polynomial_exponents<exponent_number>& that) const 
     {
         // first test total exponent
-        if (this->total != that.total)
-            return this->total < that.total;
+        auto thisT = this->total(), thatT = that.total();
+        if (thisT != thatT)
+            return thisT < thatT;
         // total exponent are equals go through list for different exponent
         for (auto thisI = this->begin(), thisE = this->end(), thatI = that.begin(), thatE = that.end();thisI != thisE && thatI != thatE;++thisI, ++thatI)
             if (*thisI != *thatI)
@@ -127,8 +122,9 @@ public:
     bool operator<=(const polynomial_exponents<exponent_number>& that) const
     {
         // first test total exponent
-        if (this->total != that.total)
-            return this->total < that.total;
+        auto thisT = this->total(), thatT = that.total();
+        if (thisT != thatT)
+            return thisT <= thatT;
         // total exponent are equals go through list for different exponent
         for (auto thisI = this->begin(), thisE = this->end(), thatI = that.begin(), thatE = that.end();thisI != thisE && thatI != thatE;++thisI, ++thatI)
             if (*thisI != *thatI)
@@ -139,7 +135,8 @@ public:
     bool operator==(const polynomial_exponents<exponent_number>& that) const
     {
         // first test total exponent
-        if (this->total != that.total)
+        auto thisT = this->total(), thatT = that.total();
+        if (thisT != thatT)
             return false;
         // total exponent are equals go through list for different exponent
         for (auto thisI = this->begin(), thisE = this->end(), thatI = that.begin(), thatE = that.end();thisI != thisE && thatI != thatE;++thisI, ++thatI)
@@ -151,7 +148,8 @@ public:
     bool operator!=(const polynomial_exponents<exponent_number>& that) const
     {
         // first test total exponent
-        if (this->total != that.total)
+        auto thisT = this->total(), thatT = that.total();
+        if (thisT != thatT)
             return true;
         // total exponent are equals go through list for different exponent
         for (auto thisI = this->begin(), thisE = this->end(), thatI = that.begin(), thatE = that.end();thisI != thisE && thatI != thatE;++thisI, ++thatI)
@@ -159,8 +157,6 @@ public:
                 return true;
         return false;
     }
-private:
-    int total = 0;
 };
 
 template<class exponent_number, class coefficient_number>
@@ -170,13 +166,13 @@ public:
     coefficient_number coefficient;
     polynomial_exponents<exponent_number> exponents;
 
-    polynomial_coefficient(coefficient_number coefficient) 
-       : coefficient(coefficient)
+    polynomial_coefficient(coefficient_number coefficient)
+        : coefficient(coefficient)
     {
     }
-    polynomial_coefficient(coefficient_number coefficient, polynomial_exponent<exponent_number> exponent)
-        : exponents(exponent)
-        , coefficient(coefficient)
+    polynomial_coefficient(coefficient_number coefficient, char variable, exponent_number exponent)
+       : coefficient(coefficient)
+       , exponents({ polynomial_exponent<exponent_number>(variable, exponent)})
     {
     }
     polynomial_coefficient(coefficient_number coefficient, std::vector<polynomial_exponent<exponent_number>> && exponents)
@@ -186,7 +182,7 @@ public:
     }
 
     void normalize() { exponents.normalize(); }
-    bool normalized() { return exponents.normalized(); }
+    bool normalized() const { return exponents.normalized(); }
 
     bool operator<(const polynomial_coefficient& arg) 
     {
@@ -260,16 +256,13 @@ public:
     };
 
     polynomial(coefficient_number coefficient)
-        : std::vector<polynomial_coefficient<exponent_number, coefficient_number>>(1, coefficient)
+        : std::vector<polynomial_coefficient<exponent_number, coefficient_number>>({ polynomial_coefficient<exponent_number,coefficient_number>(coefficient) })
     {
     };
-
-    polynomial(polynomial_coefficient<exponent_number, coefficient_number> coefficient)
-        : std::vector<polynomial_coefficient<exponent_number, coefficient_number>>(1,coefficient)
+    polynomial(char variable)
+        : std::vector<polynomial_coefficient<exponent_number, coefficient_number>>({ polynomial_coefficient<exponent_number, coefficient_number>(1, variable,1) })
     {
-        normalize(true);
     };
-
     polynomial(std::vector<polynomial_coefficient<exponent_number, coefficient_number>> && coefficients)
         : std::vector<polynomial_coefficient<exponent_number, coefficient_number>>(coefficients)
     {
@@ -278,7 +271,6 @@ public:
 
     void normalize(bool normalize_coefficients = false)
     {
-        variables.clear();
         // three iterators read, write, end to compress multi occured terms
         auto itR = this->begin(), itW = itR, itE = this->end();
         if (normalize_coefficients)
@@ -292,13 +284,8 @@ public:
         // test simple cases 0 or 1 term and gather variables
         if (itR == itE)
             return;
-        for (auto& exponent : itR->exponents)
-            variables.push_back(exponent.variable);
         if (++itR == itE)
             return;
-        for (auto& exponent : itR->exponents)
-            if (std::find(variables.begin(), variables.end(), exponent.variable) == variables.end())
-                variables.push_back(exponent.variable);
 
         // merge reoccuring coefficients e.g. 2*x^2, 3*x^2 -> 5*x^2
         do
@@ -308,10 +295,6 @@ public:
             {
                 do
                 {
-                    for (auto& exponent : itR->exponents)
-                        if (std::find(variables.begin(), variables.end(), exponent.variable) == variables.end())
-                            variables.push_back(exponent.variable);
-
                     if (itW->exponents == itR->exponents)
                         itW->coefficient += itR->coefficient;
                     else
@@ -321,16 +304,11 @@ public:
                 this->erase(++itW, itE);
                 break;
             }
-            for (auto& exponent : itR->exponents)
-                if (std::find(variables.begin(), variables.end(), exponent.variable) == variables.end())
-                    variables.push_back(exponent.variable);
             itW = itR;
         } while (++itR != itE);
-
-        std::sort(variables.begin(), variables.end(), [](auto ala, auto bob) {return bob < ala;});
     }
 
-    bool normalized(bool normalized_coefficients = false)
+    bool normalized(bool normalized_coefficients = false) const
     {
         // test each coefficient is normalized ( variables in term are decreasing and not reoccur)
         if (normalized_coefficients)
@@ -339,19 +317,6 @@ public:
                 if (!coefficient.normalized())
                     return false;
         }
-        // test variables cached match variables in polynomial terms
-        std::vector<char> variables;
-        for (auto& coefficient : *this)
-        {
-            // collect variables from polynomial terms
-            for (auto& exponent : coefficient.exponents)
-                if (std::find(variables.begin(), variables.end(), exponent.variable) == variables.end())
-                    variables.push_back(exponent.variable);
-        }
-        // sort collected variables and compare with cached variables
-        std::sort(variables.begin(), variables.end(), [](auto ala, auto bob) { return bob < ala;});
-        if (variables != this->variables)
-            return false;
         // test polynomial terms are ordered decreasing        
         auto itR = this->begin(), itW = itR, itE = this->end();
         if (itR == itE)
@@ -501,7 +466,7 @@ public:
         return result;
     }
 
-    std::string string()
+    std::string string() const
     {
         std::ostringstream stream;
         if (std::vector<polynomial_coefficient<exponent_number, coefficient_number>>::empty())
@@ -636,7 +601,22 @@ public:
             ala_powers.push_back(polynomial<exponent_number, coefficient_number>().mul(ala_powers.back(), ala));
         }
     }
-
-private:
-    std::vector<char> variables;
 };
+
+template<class exponent_number, class coefficient_number>
+polynomial<exponent_number, coefficient_number> operator+(coefficient_number left, const polynomial<exponent_number, coefficient_number>& right)
+{
+    return right + left;
+}
+
+template<class exponent_number, class coefficient_number>
+polynomial<exponent_number, coefficient_number> operator-(coefficient_number left, const polynomial<exponent_number, coefficient_number>& right)
+{
+    return -right + left;
+}
+
+template<class exponent_number, class coefficient_number>
+polynomial<exponent_number, coefficient_number> operator*(coefficient_number left, const polynomial<exponent_number, coefficient_number>& right)
+{
+    return right * left;
+}
