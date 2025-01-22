@@ -182,11 +182,23 @@ public:
     }
 
     void normalize() { exponents.normalize(); }
-    bool normalized() const { return exponents.normalized(); }
+    bool normalized() const { return coefficient !=0 && exponents.normalized(); }
 
-    bool operator<(const polynomial_coefficient& arg) 
+    bool operator<(const polynomial_coefficient& arg) const
     {
         return exponents < arg.exponents || exponents == arg.exponents && coefficient < arg.coefficient;
+    }
+    bool operator<=(const polynomial_coefficient& arg) const
+    {
+        return exponents < arg.exponents || exponents == arg.exponents && coefficient <= arg.coefficient;
+    }
+    bool operator==(const polynomial_coefficient& arg) const
+    {
+        return exponents == arg.exponents && coefficient == arg.coefficient;
+    }
+    bool operator!=(const polynomial_coefficient& arg) const
+    {
+        return exponents != arg.exponents || coefficient != arg.coefficient;
     }
 
     polynomial_coefficient operator+(const polynomial_coefficient& that) const
@@ -285,38 +297,44 @@ public:
         if (itR == itE)
             return;
         if (++itR == itE)
+        {
+            if (itW->coefficient == 0)
+                this->clear();
             return;
+        }
 
         // merge reoccuring coefficients e.g. 2*x^2, 3*x^2 -> 5*x^2
         do
         {
             // test first reoccuring terms
-            if (itW->exponents == itR->exponents)
+            if (itW->exponents == itR->exponents || itW->coefficient == 0)
             {
                 do
                 {
                     if (itW->exponents == itR->exponents)
                         itW->coefficient += itR->coefficient;
+                    else if (itW->coefficient == 0)
+                        *itW = *itR;
                     else
                         *(++itW) = *itR;
                 } while (++itR != itE);
-                // remove tail of already accumulated coefficients
-                this->erase(++itW, itE);
                 break;
             }
             itW = itR;
         } while (++itR != itE);
+
+        // remove tail of already accumulated coefficients
+        if (itW->coefficient != 0)
+            ++itW;
+        this->erase(itW, itE);
     }
 
-    bool normalized(bool normalized_coefficients = false) const
+    bool normalized() const
     {
         // test each coefficient is normalized ( variables in term are decreasing and not reoccur)
-        if (normalized_coefficients)
-        {
-            for (auto& coefficient : *this)
-                if (!coefficient.normalized())
-                    return false;
-        }
+        for (auto& coefficient : *this)
+            if (!coefficient.normalized())
+                return false;
         // test polynomial terms are ordered decreasing        
         auto itR = this->begin(), itW = itR, itE = this->end();
         if (itR == itE)
@@ -334,6 +352,55 @@ public:
         return true;
     }
 
+    bool operator==(const polynomial<exponent_number, coefficient_number>& that) const
+    {
+        if (this->size() != that.size())
+            return false;
+        for (auto thisI = this->begin(), thisE = this->end(), thatI = that.begin(), thatE = that.end();thisI != thisE;++thisI, ++thatI)
+            if (*thisI != *thatI)
+                return false;
+        return true;
+    }
+
+    bool operator!=(const polynomial<exponent_number, coefficient_number>& that) const
+    {
+        if (this->size() != that.size())
+            return true;
+        for (auto thisI = this->begin(), thisE = this->end(), thatI = that.begin(), thatE = that.end();thisI != thisE;++thisI, ++thatI)
+            if (*thisI != *thatI)
+                return true;
+        return false;
+    }
+
+    bool operator<(const polynomial<exponent_number, coefficient_number>& that) const
+    {
+        
+        for (auto thisI = this->begin(), thisE = this->end(), thatI = that.begin(), thatE = that.end();;++thisI, ++thatI)
+        {
+            if (thisI == thisE)
+                return thatI != thatE;
+            if (thatI == thatE)
+                return false;
+            if (*thisI != *thatI)
+                return *thisI<*thatI;
+        }
+        return false;
+    }
+
+    bool operator<=(const polynomial<exponent_number, coefficient_number>& that) const
+    {
+        for (auto thisI = this->begin(), thisE = this->end(), thatI = that.begin(), thatE = that.end();;++thisI, ++thatI)
+        {
+            if (thisI == thisE)
+                return true;
+            if (thatI == thatE)
+                return false;
+            if (*thisI != *thatI)
+                return *thisI <= *thatI;
+        }
+        return true;
+    }
+
     polynomial<exponent_number, coefficient_number> operator+(const polynomial<exponent_number, coefficient_number>& that) const 
     {
         polynomial<exponent_number, coefficient_number> result;
@@ -342,7 +409,8 @@ public:
         {
             if (thisI->exponents == thatI->exponents)
             {
-                result.emplace_back(*thisI + *thatI);
+                if (thisI->coefficient + thatI->coefficient != 0)
+                    result.emplace_back(*thisI + *thatI);
                 ++thisI;
                 ++thatI;
             }
@@ -390,7 +458,8 @@ public:
         {
             if (thisI->exponents == thatI->exponents)
             {
-                result.emplace_back(*thisI - *thatI);
+                if (thisI->coefficient - thatI->coefficient !=0)
+                    result.emplace_back(*thisI - *thatI);
                 ++thisI;
                 ++thatI;
             }
@@ -450,17 +519,33 @@ public:
         const std::vector<std::reference_wrapper<polynomial<exponent_number, coefficient_number>>>& polynomials)
     {
         polynomial<exponent_number, coefficient_number> result;
+        // Calculation of single term in result polynomial
+        polynomial<exponent_number, coefficient_number> term;
+        // Variables in source term not matching any source polynomial will be multiplate as is to target. Partial evaluation for example.
+        polynomial<exponent_number, coefficient_number> rest;
+
         for (auto& thisV : *this)
         {
-            polynomial<exponent_number, coefficient_number> term(thisV.coefficient);
-            for (auto& exponent : thisV.exponent)
+            term = thisV.coefficient;
+            rest = 1;
+            for (auto& exponent : thisV.exponents)
             {
                 auto it = std::find(variables.begin(), variables.end(), exponent.variable);
-                if (it == variables.end())
-                    term *= exponent;
-                else term *= polynomials[it - variables.begin()] ^ exponent->exponent;
+                if (it != variables.end())
+                { 
+                    auto polynomial_index = it - variables.begin();
+                    const polynomial<exponent_number, coefficient_number> & polynomial = polynomials[polynomial_index];
+                    term = term * (polynomial ^ exponent.exponent);
+                }
+                else
+                {
+                    rest.front().exponents.push_back(polynomial_exponent<exponent_number>(exponent));
+                }
+                    
             }
-            result += term;
+            if (!rest.front().exponents.empty())
+                term = term * rest;
+            result = result + term;
         }
         result.normalize();
         return result;
@@ -476,29 +561,41 @@ public:
         }
         for (auto & coefficient : *this)
         {
-            if (coefficient.coefficient == 1 && !coefficient.exponents.empty())
-            {
-                if (stream.tellp() > 0)
-                    stream << "+";
-            }
-            else if (coefficient.coefficient == -1 && !coefficient.exponents.empty())
-            {
-                stream << "-";
-            }
-            else
+            if (coefficient.exponents.empty())
             {
                 if (stream.tellp() > 0 && coefficient.coefficient > 0)
                     stream << "+";
                 stream << coefficient.coefficient;
             }
-            for (auto & exponent : coefficient.exponents)
+            else
             {
-                if (coefficient.coefficient != 1 && coefficient.coefficient != -1)
+                if (coefficient.coefficient == 1)
+                {
+                    if (stream.tellp() > 0)
+                        stream << "+";
+                }
+                else if (coefficient.coefficient == -1)
+                {
+                    stream << "-";
+                }
+                else
+                {
+                    if (stream.tellp() > 0 && coefficient.coefficient > 0)
+                        stream << "+";
+                    stream << coefficient.coefficient << "*";;
+                }
+                for (auto it = coefficient.exponents.begin(), itE = coefficient.exponents.end();;)
+                {
+                    stream << it->variable;
+                    if (it->exponent != 1)
+                        stream << it->exponent;
+                    if (++it == itE)
+                        break;
                     stream << "*";
-                stream << exponent.variable;
-                if (exponent.exponent != 1)
-                    stream << exponent.exponent;
+                }
             }
+
+           
         }
         return stream.str();
     };
