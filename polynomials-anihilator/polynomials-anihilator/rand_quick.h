@@ -3,8 +3,8 @@
 #include "math.h"
 
 typedef unsigned int uint;
-const static uint rand_quick_seed = 1313;
-const static double rand_quick_1max = 1.0 / pow(2.0, 32.0);
+const uint rand_quick_seed = 1313;
+const double rand_quick_1max = 1.0 / pow(2.0, 32.0);
 
 class rand_quick
 {

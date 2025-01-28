@@ -1,11 +1,10 @@
 
 #include <tuple>
 #include <cstdarg>
-#include <random>
+#include <vector>
 #include "rand_quick.h"
 #include "polynomial.h"
 
-rand_quick rand_quick;
 
 void assert(bool cond, const char* message, ...)
 {
@@ -63,7 +62,7 @@ void test_arithmetic(const std::string& result, const polynomial<int, int>& valu
 	assert(s == result, "test_arithmetic failed %s", result.c_str());
 }
 
-void test_compose()
+void test_compose01()
 {
 	polynomial<int, int> x('x'), y('y'), n(3);
 	std::vector<char> variables = { 'x' };
@@ -77,24 +76,112 @@ void test_compose()
 	w5 = w1(variables, { w4 });
 	w6 = w3(variables, { n });
 
-	assert(w5 == w6, "!!!!");
-
-	std::mt19937 gen(1313);
-	std::uniform_int_distribution<unsigned> dist(0,5);
-	int v1 = dist(gen);
-	int v2 = dist(gen);
-	int v3 = dist(gen);
-
-	int v4 = rand_quick(0, 1);
-	int v5 = rand_quick(0, 1);
-	int v6 = rand_quick(0, 1);
+	assert(w5 == w6, "!!!!");	
 }
 
-void test_arithmetic(int seed, int variables_max, int terms_max, int total_max, int coefficient_max)
+void test_compose(uint seed, int variables_max, int terms_max, int total_max, int coefficient_max)
 {
-	int variables_count = rand_quick(variables_max);
-	int terms_count = rand_quick(terms_max);
+	rand_quick rand_quick(seed);
+	int variables_count = rand_quick(1, variables_max);
+	int terms_count = rand_quick(1, terms_max);
+	auto generate = [=, &rand_quick]()->polynomial<int, int>
+	{
+		polynomial<int, int> result;
+		for (int c = terms_count;c > 0;--c)
+		{
+			polynomial_coefficient<int, int> term = rand_quick(-coefficient_max, coefficient_max);
+			int total = rand_quick(1, total_max);
+			while (total >0 )
+			{
+				int exponent = rand_quick(1, total);
+				char variable = char('a' + rand_quick(0, variables_count-1));
+				term.exponents.push_back(polynomial_exponent<int>(variable,exponent));
+				total -= exponent;
+			}
+			result.push_back(term);
+		}
+		result.normalize(true);
+		return result;
+	};
+
+	std::vector<char> variables(variables_count);
+	for (char i = 0;i < variables_count;++i)
+		variables[i] = 'a' + i;
+	polynomial<int, int> compose_function = generate();
+
+	std::vector<polynomial<int, int>> argsV;
+	std::vector<std::reference_wrapper<polynomial<int, int>>> argsR;
+	for (int i = 0;i < variables_count;++i)
+		argsV.emplace_back(generate());
+	for (int i = 0;i < variables_count;++i)	
+		argsR.emplace_back(argsV[i]);
+	for (int i = 0;i < variables_count;++i)
+		assert(argsV[i] == argsR[i], "reference_wrapper differ");
+	
+
+	std::vector<polynomial<int, int>> numsV;
+	std::vector<std::reference_wrapper<polynomial<int, int>>> numsR;
+	for (int i = 0;i < variables_count;++i)
+		numsV.emplace_back(rand_quick(-coefficient_max, coefficient_max));
+	for (int i = 0;i < variables_count;++i)
+		numsR.emplace_back(numsV[i]);
+	for (int i = 0;i < variables_count;++i)
+		assert(numsV[i] == numsR[i], "reference_wrapper differ");
+
+	std::vector<polynomial<int, int>> evalsV;
+	std::vector<std::reference_wrapper<polynomial<int, int>>> evalsR;
+	for (int i = 0;i < variables_count;++i)
+		evalsV.emplace_back(argsV[i](variables, numsR));
+	for (int i = 0;i < variables_count;++i)
+		evalsR.emplace_back(evalsV[i]);
+	for (int i = 0;i < variables_count;++i)
+		assert(evalsV[i] == evalsR[i], "reference_wrapper differ");
+
+	polynomial<int, int> compose_result = compose_function(variables, argsR);
+	polynomial<int, int> compose_evaluated = compose_result(variables, numsR);
+	polynomial<int, int> function_evaluated = compose_function(variables, evalsR);
+	if (false)
+	{
+		std::cout << "compose_function: " << compose_function.string() << std::endl;
+		std::cout << "arguments: " << std::endl;
+		for (int i = 0;i < variables_count;++i)
+			std::cout << "variable " << variables[i] <<": " << argsV[i].string() << std::endl;
+		std::cout << "compose_result: " << compose_result.string() << std::endl;
+		std::cout << "numbers: " << std::endl;
+		for (int i = 0;i < variables_count;++i)
+			std::cout << "variable " << variables[i] << ": " << numsV[i].string() << " " << std::endl;
+		std::cout << "evaluated arguments: " << std::endl;
+		for (int i = 0;i < variables_count;++i)
+			std::cout << "variable " << variables[i] << ": " << evalsV[i].string() << std::endl;
+	}
+	assert(function_evaluated == compose_evaluated,
+		"test_compose failed seed=%u, variables_max=%d, terms_max=%d, total_max=%d, coefficient_max=%d", 
+		seed, variables_max, terms_max, total_max, coefficient_max
+	);
 }
+
+void test_compose02()
+{
+	test_compose(1316, 3, 10, 10, 100);
+	uint seed = rand_quick_seed;
+	for (int c = 1000;c > 0;--c)
+	{
+		test_compose(++seed, 3, 10, 10, 100);
+	}
+}
+
+void test_compose()
+{
+	//test_compose(1375, 2, 2, 2, 5);
+	//test_compose(1375, 2, 10, 10, 5);
+	test_compose(1316, 3, 10, 10, 100);
+	uint seed = rand_quick_seed;
+	for (int c = 1000;c > 0;--c)
+	{
+		test_compose(++seed, 2, 2, 2, 5);
+	}
+}
+
 
 void test_arithmetic()
 {

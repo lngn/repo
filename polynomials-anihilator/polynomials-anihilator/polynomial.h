@@ -514,7 +514,7 @@ public:
         return result;
     }
     
-    polynomial operator()(
+    polynomial<exponent_number, coefficient_number> operator()(
         const std::vector<char>& variables, 
         const std::vector<std::reference_wrapper<polynomial<exponent_number, coefficient_number>>>& polynomials)
     {
@@ -686,18 +686,6 @@ public:
             else return false;
         }
     }
-
-    bool anihilate2(const polynomial & ala, const polynomial & bob)
-    {
-        std::vector<polynomial> ala_powers;
-        std::vector<polynomial> bob_powers;
-
-        //
-        for (int total_exponent = 0; ;++total_exponent)
-        {
-            ala_powers.push_back(polynomial<exponent_number, coefficient_number>().mul(ala_powers.back(), ala));
-        }
-    }
 };
 
 template<class exponent_number, class coefficient_number>
@@ -717,3 +705,29 @@ polynomial<exponent_number, coefficient_number> operator*(coefficient_number lef
 {
     return right * left;
 }
+
+template <class exponent_number, class coefficient_number>
+class polynomials
+{
+public:
+    std::vector<char> variables;
+    std::vector<polynomial< exponent_number, coefficient_number >> polynomials;
+
+    polynomial< exponent_number, coefficient_number > apply(const polynomial< exponent_number, coefficient_number > & va)
+    {
+        return 0;
+    }
+    bool anihilate2(const polynomial< exponent_number, coefficient_number >& ala, const polynomial< exponent_number, coefficient_number >& bob)
+    {
+        std::vector<polynomial> ala_powers;
+        std::vector<polynomial> bob_powers;
+
+        //
+        for (int total_exponent = 0; ;++total_exponent)
+        {
+            ala_powers.push_back(polynomial<exponent_number, coefficient_number>().mul(ala_powers.back(), ala));
+        }
+    }
+private:
+    std::vector<std::vector<polynomial< exponent_number, coefficient_number >>> cache;
+};
