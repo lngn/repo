@@ -2,6 +2,8 @@
 #include "polynomial.h"
 #include <ranges>
 #include <list>
+#include <unordered_map>
+
 int main()
 {
     std::vector<int> t{ 1,2 };
@@ -15,10 +17,15 @@ int main()
         | std::views::filter([](const int n) {return n % 3 == 0; })
         | std::views::transform([](const int n) {return n * n; });
 
+    std::unordered_map<std::string, int> test05;
+    test05["xyz"] = 30;
+
+    void test_exponents_increment();
     void test_parse();
     void test_arithmetic();
     void test_compose();
 
+    test_exponents_increment();
     test_compose();
     test_parse();
     test_arithmetic();

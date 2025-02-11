@@ -178,7 +178,7 @@ void test_compose()
 	uint seed = rand_quick_seed;
 	for (int c = 1000;c > 0;--c)
 	{
-		test_compose(++seed, 2, 2, 2, 5);
+		test_compose(++seed, 3, 5, 5, 5);
 	}
 }
 
@@ -208,6 +208,103 @@ void test_arithmetic()
 }
 
 
+
+int count_exponents(int variables_count, int total_max)
+{
+	if (variables_count == 1)
+		return total_max + 1;
+	int count = 0;
+	for (int i = 0;i <= total_max;++i)
+		count += count_exponents(variables_count - 1, total_max - i);
+	return count;
+}
+
+void test_exponents(int variables_count, int total_max)
+{
+	std::vector<polynomial<int, int>> testV;
+	polynomial<int, int> testP = 1;
+	for (char variable = 'a' + variables_count;variable > 'a'; --variable)
+		testP.front().exponents.emplace_back(variable, 0);
+	for (;testP.front().total() <= total_max; ++testP.front().exponents)
+		testV.push_back(testP);
+	assert(testV.size() == count_exponents(variables_count, total_max),"test_exponents incorrect operator ++ or incorrect count of different exponents");
+
+	for (auto it=testV.begin(),itE=testV.end();it != itE;++it)
+	{
+		testP = *it;
+		assert(testP == *it, "test_exponents incorrect operator ==");
+		assert(testP <= *it, "test_exponents incorrect operator <=");
+		++testP.front().exponents;
+		--testP.front().exponents;
+		assert(testP == *it, "test_exponents incorrect operator --");		
+		for (auto itN = it+1; itN != itE;++itN)
+		{
+			assert(testP < *itN, "test_exponents incorrect operator <");
+			assert(testP <= *itN, "test_exponents incorrect operator <=");
+			assert(testP != *itN, "test_exponents incorrect operator !=");
+		}
+	}
+}
+void test_exponents()
+{
+	//test_exponents(3,3);
+	for (int variables_count = 1;variables_count <= 5; ++variables_count)
+		for (int total_max = 1;total_max <= 5; ++total_max)
+			test_exponents(variables_count, total_max);
+}
+
+void test_exponents_increment()
+{
+	test_exponents();
+}
+
+/**
+void test_exponents_increment()
+{
+	int c1 = test01(1, 4);
+	int c2 = test01(2, 4);
+	int c3 = test01(3, 4);
+	int c6 = test01(4, 5);
+
+
+	polynomial<int,int> test = 1, test_dec = 1;
+	test.front().exponents.emplace_back('d', 0);
+	test.front().exponents.emplace_back('c', 0);
+	test.front().exponents.emplace_back('b', 0);
+	test.front().exponents.emplace_back('a', 0);
+	
+	
+	int c4 = 0;
+	test.normalize(true);
+	std::vector<std::string> test01;
+	while (test.front().total() <= 5) 
+	{
+		++c4;
+		test01.emplace_back(test.string()); 
+		std::cout << test01.back() <<std::endl;
+	
+	
+
+		++test.front().exponents; 
+
+		/**
+		test_dec = test;
+		++test_dec.front().exponents;
+		--test_dec.front().exponents;
+		if (test_dec != test)
+			assert(test == test_dec, "zzzzzz");
+		/**
+	}
+	assert(c4 == c6, "zzzzzzz");
+
+	std::vector<std::string> test02;
+}
+/**/
+
+void test_anihilate()
+{
+	
+}
 
 void test_polynomials()
 {

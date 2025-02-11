@@ -5,6 +5,8 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include <unordered_map>
+#include "rand_quick.h"
 
 template<class exponent_number>
 class polynomial_exponent
@@ -157,7 +159,81 @@ public:
                 return true;
         return false;
     }
+    
+    polynomial_exponents<exponent_number>& operator++()
+    {
+        auto itB = this->begin(), itL = this->end();
+        if (itB ==itL) 
+            return *this;
+        if (--itL == itB)
+        {
+            ++itB->exponent;
+            return *this;
+        }
+
+        auto it = itL;
+        while (it != itB && it->exponent == 0) --it;
+
+        if (it == itB) 
+        {
+            itL->exponent = itB->exponent + 1;
+            itB->exponent = 0;
+            
+        }
+        else
+        {
+            itL->exponent = it->exponent - 1;
+            if (it != itL )
+                it->exponent = 0;
+            ++(--it)->exponent;
+        }
+        return *this;
+    }
+
+    polynomial_exponents<exponent_number>& operator--()
+    {
+        auto itB = this->begin(), itL = this->end();
+        if (itB == itL)
+            return *this;
+        if (--itL == itB)
+        {
+            --itB->exponent;
+            return *this;
+        }
+
+        auto it = itL;
+        do --it; while (it != itB && it->exponent == 0);
+
+        if (it->exponent == 0)
+        {
+            itB->exponent = itL->exponent - 1;
+            itL->exponent = 0;
+
+        }
+        else
+        {
+            --it->exponent;
+            (++it)->exponent = itL->exponent + 1;
+            if (it != itL)
+                itL->exponent = 0;
+        }
+
+        return *this;
+    }
 };
+
+namespace std {
+    template <class exponent_number> struct hash<polynomial_exponents<exponent_number>>
+    {
+        size_t operator()(const polynomial_exponents<exponent_number>& exponents) const
+        {
+            size_t hash = 0;
+            for (const auto& exponent : exponents)
+                hash ^= rand_quick::next(exponent.variable) ^ rand_quick::next(exponent.exponent);
+            return hash;
+        }
+    };
+}
 
 template<class exponent_number, class coefficient_number>
 class polynomial_coefficient
@@ -183,6 +259,7 @@ public:
 
     void normalize() { exponents.normalize(); }
     bool normalized() const { return coefficient !=0 && exponents.normalized(); }
+    int total() { return exponents.total();  }
 
     bool operator<(const polynomial_coefficient& arg) const
     {
@@ -707,27 +784,129 @@ polynomial<exponent_number, coefficient_number> operator*(coefficient_number lef
 }
 
 template <class exponent_number, class coefficient_number>
-class polynomials
+class polynomials_applicator
 {
 public:
     std::vector<char> variables;
     std::vector<polynomial< exponent_number, coefficient_number >> polynomials;
 
-    polynomial< exponent_number, coefficient_number > apply(const polynomial< exponent_number, coefficient_number > & va)
+    polynomial<exponent_number, coefficient_number> apply(const polynomial< exponent_number, coefficient_number >& thisP)
     {
-        return 0;
+        polynomial<exponent_number, coefficient_number> result;
+        // Calculation of single term in result polynomial
+        polynomial<exponent_number, coefficient_number> term;
+        // Variables in source term not matching any source polynomial will be multiplate as is to target. Partial evaluation for example.
+        polynomial<exponent_number, coefficient_number> rest;
+
+        for (auto& thisV : thisP)
+        {
+            term = thisV.coefficient;
+            rest = 1;
+            for (auto& exponent : thisV.exponents)
+            {
+                auto it = std::find(variables.begin(), variables.end(), exponent.variable);
+                if (it != variables.end())
+                {
+                    auto polynomial_index = it - variables.begin();
+                    term = term * apply(polynomial_index, exponent.exponent);
+                }
+                else
+                {
+                    rest.front().exponents.push_back(polynomial_exponent<exponent_number>(exponent));
+                }
+
+            }
+            if (!rest.front().exponents.empty())
+                term = term * rest;
+            result = result + term;
+        }
+        result.normalize();
+        return result;
     }
-    bool anihilate2(const polynomial< exponent_number, coefficient_number >& ala, const polynomial< exponent_number, coefficient_number >& bob)
+private:
+    std::vector<std::vector<polynomial< exponent_number, coefficient_number >>> cache_powers;
+
+    polynomial<exponent_number, coefficient_number>& apply(int index, int exponent)
     {
-        std::vector<polynomial> ala_powers;
-        std::vector<polynomial> bob_powers;
+        std::vector<polynomial< exponent_number, coefficient_number >>& cache = cache_powers[index];
+        while (cache.size() <= exponent)
+            cache.emplace_back(0);
+        if (cache[index] == 0)
+        {
+            if (cache[index - 1] != 0)
+                cache[index] = cache[index - 1] * cache[1];
+            else
+                cache[index] = apply(index, exponent / 2) * apply(index, (exponent + 1) / 2);
+        }
+        return cache[index];
+    }
+};
+
+template <class exponent_number, class coefficient_number>
+class polynomials_anihilator: polynomials_applicator<exponent_number, coefficient_number>
+{
+public:
+    enum Status 
+    {
+        status_started,
+        status_total_exponents_overflow,
+        status_finished
+    } status;
+    int total_exponents_max = 10;
+    int total_coefficients_max = 1000;
+
+    bool anihilate2()
+    {
+
+        polynomial<exponent_number, coefficient_number> compose_function = 1, evaluated_function;
+        for (char variable : this->variables)
+            compose_function.front().exponents.push_back(variable);
+        for (;;)
+        {
+            if (++compose_function > total_exponents_max)
+            {
+
+            }
+            composition composition
+            {
+                compose_function = compose_function,
+                evaluated_function = apply(compose_function)
+            };
+            
+            auto it = cache_compositions.find(composition.evaluated_function.front().exponents);
+            if (it == cache_compositions.end())
+            {
+                cache_compositions[composition.evaluated_function.front().exponents] = composition;
+                continue;
+            }
+            for (;;)
+            {
+                composition.compose_function = composition.compose_function* it->second.compose_function.front().coefficient - it->second.compose_function * composition.compose_function.front().coefficient;
+
+            }
+            if (composition.evaluated_function == 0)
+            {
+
+            }
+        }
+
 
         //
         for (int total_exponent = 0; ;++total_exponent)
         {
-            ala_powers.push_back(polynomial<exponent_number, coefficient_number>().mul(ala_powers.back(), ala));
+            
+
+            for (int exponent = 0;exponent <= total_exponent;++exponent)
+            {
+                composition compositionN;
+            }
         }
     }
 private:
-    std::vector<std::vector<polynomial< exponent_number, coefficient_number >>> cache;
+    struct composition
+    {
+        polynomial<exponent_number, coefficient_number> compose_function;
+        polynomial<exponent_number, coefficient_number> evaluated_function;
+    };
+    std::unordered_map<polynomial_exponents<exponent_number>,composition> cache_compositions;
 };
