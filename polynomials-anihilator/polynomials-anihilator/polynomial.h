@@ -354,12 +354,13 @@ public:
     };
 
     polynomial(coefficient_number coefficient)
-        : std::vector<polynomial_coefficient<exponent_number, coefficient_number>>({ polynomial_coefficient<exponent_number,coefficient_number>(coefficient) })
     {
+        if (coefficient != 0)
+            this->emplace_back(coefficient);
     };
     polynomial(char variable)
-        : std::vector<polynomial_coefficient<exponent_number, coefficient_number>>({ polynomial_coefficient<exponent_number, coefficient_number>(1, variable,1) })
     {
+        this->emplace_back(1, variable, 1);
     };
     polynomial(std::vector<polynomial_coefficient<exponent_number, coefficient_number>> && coefficients)
         : std::vector<polynomial_coefficient<exponent_number, coefficient_number>>(coefficients)
@@ -875,14 +876,14 @@ private:
         std::vector<polynomial< exponent_number, coefficient_number >>& cache = cache_powers[index];
         while (cache.size() <= exponent)
             cache.emplace_back(0);
-        if (!cache[exponent].empty())
+        if (cache[exponent].empty())
         {
             if (!cache[exponent - 1].empty())
                 cache[exponent] = cache[exponent - 1] * cache[1];
             else
                 cache[exponent] = apply(index, exponent / 2) * apply(index, (exponent + 1) / 2);
         }
-        return cache[index];
+        return cache[exponent];
     }
 };
 
@@ -925,7 +926,11 @@ public:
 
     bool anihilate()
     {
+        this->init();
+        cache_compositions.clear();
+
         polynomial<exponent_number, coefficient_number> compose_iterator = 1, compose_function, evaluated_function, result;
+        cache_compositions[compose_iterator.front().exponents] = {1,1};
         for (char variable : this->arg_variables)
             compose_function.front().exponents.push_back(variable);
         for (;;)

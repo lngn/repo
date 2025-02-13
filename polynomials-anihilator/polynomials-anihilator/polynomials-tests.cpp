@@ -202,9 +202,9 @@ void test_applicator(uint seed, int variables_max, int terms_max, int total_max,
 void test_applicator()
 {
 	uint seed = rand_quick_seed;
-	for (int c = 1000;c > 0;--c)
+	for (int c = 10;c > 0;--c)
 	{
-		test_applicator(++seed, 3, 5, 5, 10,1);
+		test_applicator(++seed, 3, 3, 7, 10, 100);
 	}
 }
 
@@ -285,6 +285,6 @@ void test_polynomials()
 	test_arithmetic();
 	test_exponents();
 	test_compose();
-	//test_applicator();
-	//test_anihilate();
+	test_applicator();
+	test_anihilate();
 }
