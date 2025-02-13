@@ -49,6 +49,10 @@ public:
         : std::vector<polynomial_exponent<exponent_number>>(exponents)
     {
     }
+    polynomial_exponents(const std::vector<polynomial_exponent<exponent_number>>& exponents)
+        : std::vector<polynomial_exponent<exponent_number>>(exponents)
+    {
+    }
 
     void normalize()
     {
@@ -256,10 +260,15 @@ public:
         , coefficient(coefficient)
     {
     }
+    polynomial_coefficient(coefficient_number coefficient, const std::vector<polynomial_exponent<exponent_number>>& exponents)
+        : exponents(exponents)
+        , coefficient(coefficient)
+    {
+    }
 
     void normalize() { exponents.normalize(); }
     bool normalized() const { return coefficient !=0 && exponents.normalized(); }
-    int total() { return exponents.total();  }
+    int total() const { return exponents.total();  }
 
     bool operator<(const polynomial_coefficient& arg) const
     {
@@ -429,6 +438,8 @@ public:
         return true;
     }
 
+    int total() const { return this->empty() ? 0 : this->front().total(); }
+
     bool operator==(const polynomial<exponent_number, coefficient_number>& that) const
     {
         if (this->size() != that.size())
@@ -591,9 +602,32 @@ public:
         return result;
     }
     
+    const static int params_size_max = 16;
+    class variables_params 
+    {
+    public:
+        variables_params(const std::vector<char>& variables) { for (char variable : variables) push_back(variable); }
+        int find(char variable) const { for (int i = 0;i < params_size;++i) if (params_data[i] == variable) return i; return -1; }
+        void push_back(char variable) { if (params_size < params_size_max) params_data[params_size++] = variable; }
+    private:
+        int params_size = 0;
+        char params_data[params_size_max];
+    };
+
+    class polynomials_params
+    {
+    public:
+        polynomials_params(const std::vector<polynomial<exponent_number, coefficient_number>>& polynomials) { for (auto& polynomial : polynomials) push_back(polynomial);}
+        const polynomial<exponent_number, coefficient_number>* find(int index) const { return 0 <= index && index < params_size ? params_data[index] : nullptr; }
+        void push_back(const polynomial<exponent_number, coefficient_number> & polynomial) { if (params_size < params_size_max) params_data[params_size++] = &polynomial; }
+    private:
+        int params_size = 0;
+        const polynomial<exponent_number, coefficient_number>* params_data[params_size_max];
+    };
+
     polynomial<exponent_number, coefficient_number> operator()(
-        const std::vector<char>& variables, 
-        const std::vector<std::reference_wrapper<polynomial<exponent_number, coefficient_number>>>& polynomials)
+        const variables_params& variables,
+        const polynomials_params& polynomials) const
     {
         polynomial<exponent_number, coefficient_number> result;
         // Calculation of single term in result polynomial
@@ -607,12 +641,10 @@ public:
             rest = 1;
             for (auto& exponent : thisV.exponents)
             {
-                auto it = std::find(variables.begin(), variables.end(), exponent.variable);
-                if (it != variables.end())
-                { 
-                    auto polynomial_index = it - variables.begin();
-                    const polynomial<exponent_number, coefficient_number> & polynomial = polynomials[polynomial_index];
-                    term = term * (polynomial ^ exponent.exponent);
+                const polynomial<exponent_number, coefficient_number>* polynomial = polynomials.find(variables.find(exponent.variable));
+                if (polynomial != nullptr)
+                {
+                    term = term * (*polynomial ^ exponent.exponent);
                 }
                 else
                 {
@@ -787,10 +819,22 @@ template <class exponent_number, class coefficient_number>
 class polynomials_applicator
 {
 public:
-    std::vector<char> variables;
-    std::vector<polynomial< exponent_number, coefficient_number >> polynomials;
+    std::vector<char> arg_variables;
+    std::vector<polynomial< exponent_number, coefficient_number >> arg_polynomials;
 
-    polynomial<exponent_number, coefficient_number> apply(const polynomial< exponent_number, coefficient_number >& thisP)
+    void init()
+    {
+        if (arg_variables.empty())
+        {
+            for (char i = 0;i < arg_polynomials.size();++i)
+                arg_variables.push_back('a' + i);
+        }
+        cache_powers.clear();
+        for (int i = 0;i < arg_polynomials.size();++i)
+            cache_powers.push_back({1, arg_polynomials[i]});
+    }
+
+    polynomial<exponent_number, coefficient_number> apply(const polynomial< exponent_number, coefficient_number >& compose_polynomial)
     {
         polynomial<exponent_number, coefficient_number> result;
         // Calculation of single term in result polynomial
@@ -798,21 +842,21 @@ public:
         // Variables in source term not matching any source polynomial will be multiplate as is to target. Partial evaluation for example.
         polynomial<exponent_number, coefficient_number> rest;
 
-        for (auto& thisV : thisP)
+        for (auto& compose_term : compose_polynomial)
         {
-            term = thisV.coefficient;
+            term = compose_term.coefficient;
             rest = 1;
-            for (auto& exponent : thisV.exponents)
+            for (auto& compose_exponent : compose_term.exponents)
             {
-                auto it = std::find(variables.begin(), variables.end(), exponent.variable);
-                if (it != variables.end())
+                auto it = std::find(arg_variables.begin(), arg_variables.end(), compose_exponent.variable);
+                if (it != arg_variables.end())
                 {
-                    auto polynomial_index = it - variables.begin();
-                    term = term * apply(polynomial_index, exponent.exponent);
+                    int polynomial_index = int(it - arg_variables.begin());
+                    term = term * apply(polynomial_index, compose_exponent.exponent);
                 }
                 else
                 {
-                    rest.front().exponents.push_back(polynomial_exponent<exponent_number>(exponent));
+                    rest.front().exponents.push_back(polynomial_exponent<exponent_number>(compose_exponent));
                 }
 
             }
@@ -831,76 +875,98 @@ private:
         std::vector<polynomial< exponent_number, coefficient_number >>& cache = cache_powers[index];
         while (cache.size() <= exponent)
             cache.emplace_back(0);
-        if (cache[index] == 0)
+        if (!cache[exponent].empty())
         {
-            if (cache[index - 1] != 0)
-                cache[index] = cache[index - 1] * cache[1];
+            if (!cache[exponent - 1].empty())
+                cache[exponent] = cache[exponent - 1] * cache[1];
             else
-                cache[index] = apply(index, exponent / 2) * apply(index, (exponent + 1) / 2);
+                cache[exponent] = apply(index, exponent / 2) * apply(index, (exponent + 1) / 2);
         }
         return cache[index];
     }
 };
 
 template <class exponent_number, class coefficient_number>
-class polynomials_anihilator: polynomials_applicator<exponent_number, coefficient_number>
+class polynomials_anihilator: public polynomials_applicator<exponent_number, coefficient_number>
 {
 public:
-    enum Status 
-    {
-        status_started,
-        status_total_exponents_overflow,
-        status_finished
-    } status;
-    int total_exponents_max = 10;
-    int total_coefficients_max = 1000;
+    polynomial<exponent_number, coefficient_number> res_polynomial;
+    bool res_exponents_overflow = false;
+    bool res_coefficients_overflow = false;
+    int opt_exponents_max = 10;
+    int opt_coefficients_max = 1000;
 
-    bool anihilate2()
+    std::string res_info()
     {
+        std::ostringstream stream;
+        if (res_exponents_overflow)
+            stream << "greatest total exponent overflow occured with exponents_max=" << opt_exponents_max;
+        if (res_coefficients_overflow)
+            stream << "number of terms overflow occured with exponents_max=" << opt_coefficients_max;
+        if (!res_polynomial.empty())
+            stream << "result polynomial: greatest total exponent " << res_polynomial.total() << "number of terms " << res_polynomial.size();
+    }
 
-        polynomial<exponent_number, coefficient_number> compose_function = 1, evaluated_function;
-        for (char variable : this->variables)
+    bool res_test()
+    {
+        res_polynomial(this->arg_variables, this->arg_polynomials).empty();
+    }
+
+    bool res_test(const polynomial<exponent_number, coefficient_number> & compose_function, const polynomial<exponent_number, coefficient_number> & evaluated_function)
+    {
+        if (compose_function.total() > opt_exponents_max || evaluated_function.total() > opt_exponents_max)
+            res_exponents_overflow = true;
+
+        if (compose_function.size() > opt_coefficients_max|| evaluated_function.size() > opt_coefficients_max)
+            res_coefficients_overflow = true;
+
+        return !res_exponents_overflow && !res_coefficients_overflow;
+    }
+
+    bool anihilate()
+    {
+        polynomial<exponent_number, coefficient_number> compose_iterator = 1, compose_function, evaluated_function, result;
+        for (char variable : this->arg_variables)
             compose_function.front().exponents.push_back(variable);
         for (;;)
         {
-            if (++compose_function > total_exponents_max)
-            {
-
-            }
-            composition composition
-            {
-                compose_function = compose_function,
-                evaluated_function = apply(compose_function)
-            };
+            ++compose_iterator.front().exponents;
+            compose_function = compose_iterator;
+            evaluated_function = this->apply(compose_function);
+            if (!res_test(compose_function, evaluated_function))
+                return false;
             
-            auto it = cache_compositions.find(composition.evaluated_function.front().exponents);
-            if (it == cache_compositions.end())
-            {
-                cache_compositions[composition.evaluated_function.front().exponents] = composition;
-                continue;
-            }
             for (;;)
             {
-                composition.compose_function = composition.compose_function* it->second.compose_function.front().coefficient - it->second.compose_function * composition.compose_function.front().coefficient;
+                auto it = cache_compositions.find(evaluated_function.front().exponents);
+                if (it == cache_compositions.end())
+                {
+                    cache_compositions[evaluated_function.front().exponents] = { compose_function, evaluated_function};
+                    break;
+                }
 
+                coefficient_number reduct_1_coefficient = it->second.evaluated_function.front().coefficient;
+                coefficient_number reduct_2_coefficient = evaluated_function.front().coefficient;
+                
+                reduct_exponents(result,
+                    compose_function, reduct_1_coefficient,
+                    it->second.compose_function, reduct_2_coefficient
+                );
+                compose_function = result;
+
+                reduct_exponents(result,
+                    evaluated_function, reduct_1_coefficient,
+                    it->second.evaluated_function, reduct_2_coefficient
+                );
+                evaluated_function = result;
+
+                if (evaluated_function.empty())
+                    return true;
+                if (!res_test(compose_function, evaluated_function))
+                    return false;
             }
-            if (composition.evaluated_function == 0)
-            {
-
-            }
-        }
-
-
-        //
-        for (int total_exponent = 0; ;++total_exponent)
-        {
             
-
-            for (int exponent = 0;exponent <= total_exponent;++exponent)
-            {
-                composition compositionN;
-            }
-        }
+        }      
     }
 private:
     struct composition
@@ -909,4 +975,46 @@ private:
         polynomial<exponent_number, coefficient_number> evaluated_function;
     };
     std::unordered_map<polynomial_exponents<exponent_number>,composition> cache_compositions;
+
+    void reduct_exponents(polynomial<exponent_number, coefficient_number> & result, 
+        const polynomial<exponent_number, coefficient_number> thisP, coefficient_number thisC,
+        const polynomial<exponent_number, coefficient_number> thatP, coefficient_number thatC)
+    {
+        result.clear();
+
+        auto thisI = thisP.begin(), thisE = thisP.end(), thatI = thatP.begin(), thatE = thatP.end();
+        while (thisI != thisE && thatI != thatE)
+        {
+            if (thisI->exponents == thatI->exponents)
+            {
+                coefficient_number coefficient = thisI->coefficient * thisC - thatI->coefficient * thatC;
+                if (coefficient !=0)
+                    result.emplace_back(coefficient, thisI->exponents);
+                ++thisI;
+                ++thatI;
+            }
+            else if (thisI->exponents < thatI->exponents)
+            {
+                result.emplace_back(thatI->coefficient * thatC, thatI->exponents);
+                ++thatI;
+            }
+            else
+            {
+                result.emplace_back(thisI->coefficient * thisC, thisI->exponents);
+                ++thisI;
+            }
+        }
+        while (thisI != thisE)
+        {
+            result.emplace_back(thisI->coefficient * thisC, thisI->exponents);
+            ++thisI;
+        }
+        while (thatI != thatE)
+        {
+            result.emplace_back(thatI->coefficient * thatC, thatI->exponents);
+            ++thatI;
+        }
+        if (result != thisP * thisC - thatP * thatC)
+            throw 0;
+    }
 };
