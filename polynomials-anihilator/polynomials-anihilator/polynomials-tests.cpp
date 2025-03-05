@@ -271,12 +271,17 @@ void test_exponents()
 			test_exponents(variables_count, total_max);
 }
 
+
 void test_anihilate()
 {
 	polynomial<int, int> x('x');
 	polynomials_anihilator<int, int> polynomials_anihilator;
-	polynomials_anihilator.arg_polynomials = { 2 * x , 3 * x };
-	polynomials_anihilator.anihilate();
+	//polynomials_anihilator.arg_polynomials = { 2 * x , 3 * x };
+	//polynomials_anihilator.arg_polynomials = { 2 * (x^3)+x , 3 * x^2 };
+	polynomials_anihilator.arg_polynomials = { 2 * (x ^ 3) + x , 3 * (x ^ 4)+3*(x^2)};
+	assert(polynomials_anihilator.anihilate(), "xxx01");
+	assert(polynomials_anihilator.res_test(), "xxx02");
+	std::cout << polynomials_anihilator.res_polynomial.string();
 }
 
 void test_polynomials()

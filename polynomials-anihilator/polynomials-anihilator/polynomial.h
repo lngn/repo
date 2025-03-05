@@ -830,6 +830,7 @@ public:
             for (char i = 0;i < arg_polynomials.size();++i)
                 arg_variables.push_back('a' + i);
         }
+        std::sort(arg_variables.begin(), arg_variables.end(), [](auto ala, auto bob) { return bob < ala;});
         cache_powers.clear();
         for (int i = 0;i < arg_polynomials.size();++i)
             cache_powers.push_back({1, arg_polynomials[i]});
@@ -894,7 +895,7 @@ public:
     polynomial<exponent_number, coefficient_number> res_polynomial;
     bool res_exponents_overflow = false;
     bool res_coefficients_overflow = false;
-    int opt_exponents_max = 10;
+    int opt_exponents_max = 100;
     int opt_coefficients_max = 1000;
 
     std::string res_info()
@@ -910,7 +911,7 @@ public:
 
     bool res_test()
     {
-        res_polynomial(this->arg_variables, this->arg_polynomials).empty();
+        return res_polynomial(this->arg_variables, this->arg_polynomials).empty();
     }
 
     bool res_test(const polynomial<exponent_number, coefficient_number> & compose_function, const polynomial<exponent_number, coefficient_number> & evaluated_function)
@@ -932,7 +933,7 @@ public:
         polynomial<exponent_number, coefficient_number> compose_iterator = 1, compose_function, evaluated_function, result;
         cache_compositions[compose_iterator.front().exponents] = {1,1};
         for (char variable : this->arg_variables)
-            compose_function.front().exponents.push_back(variable);
+            compose_iterator.front().exponents.emplace_back(variable, 0);
         for (;;)
         {
             ++compose_iterator.front().exponents;
@@ -966,7 +967,10 @@ public:
                 evaluated_function = result;
 
                 if (evaluated_function.empty())
+                {
+                    res_polynomial = compose_function;
                     return true;
+                }
                 if (!res_test(compose_function, evaluated_function))
                     return false;
             }
@@ -1000,7 +1004,7 @@ private:
             }
             else if (thisI->exponents < thatI->exponents)
             {
-                result.emplace_back(thatI->coefficient * thatC, thatI->exponents);
+                result.emplace_back(-thatI->coefficient * thatC, thatI->exponents);
                 ++thatI;
             }
             else
@@ -1016,7 +1020,7 @@ private:
         }
         while (thatI != thatE)
         {
-            result.emplace_back(thatI->coefficient * thatC, thatI->exponents);
+            result.emplace_back(-thatI->coefficient * thatC, thatI->exponents);
             ++thatI;
         }
         if (result != thisP * thisC - thatP * thatC)
