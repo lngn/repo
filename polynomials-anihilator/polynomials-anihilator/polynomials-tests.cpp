@@ -3,8 +3,21 @@
 #include <cstdarg>
 #include <vector>
 #include "rand_quick.h"
+#include "coefficients.h"
 #include "polynomial.h"
 
+
+using polynomial139 = polynomial<int, coefficient139>;
+using polynomial_coefficient139 = polynomial_coefficient<int, coefficient139>;
+using polynomials_anihilator139 = polynomials_anihilator<int, coefficient139>;
+
+typedef polynomial139 polynomial_test;
+typedef polynomial_coefficient139 coefficient_test;
+typedef polynomials_anihilator139 anihilator_test;
+
+//typedef polynomial<int, int> polynomial_test;
+//typedef polynomial_coefficient<int, int> coefficient_test;
+//typedef polynomials_anihilator<int, int> anihilator_test;
 
 void assert(bool cond, const char* message, ...)
 {
@@ -19,7 +32,7 @@ void assert(bool cond, const char* message, ...)
 
 void test_parse(const std::string& istring, const std::string& ostring)
 {
-	polynomial<int, int> polynomial;
+	polynomial_test polynomial;
 	bool res = polynomial.parse(istring);
 	assert(res, "test_parse failed %s", istring.c_str());
 	std::string pstring = polynomial.string();
@@ -29,6 +42,8 @@ void test_parse(const std::string& istring, const std::string& ostring)
 
 void test_parse()
 {
+	coefficient139 c(-1);
+
 	test_parse("0", "0");
 	test_parse(" 0 ", "0");
 	test_parse("-1", "-1");
@@ -36,7 +51,7 @@ void test_parse()
 	test_parse("1", "1");
 	test_parse("  1", "1");
 	test_parse("43 ", "43");
-	test_parse(" -201", "-201");
+	test_parse(" -29", "-29");
 
 	test_parse("x-10","");
 	test_parse("-y-11", "");
@@ -55,7 +70,7 @@ void test_parse()
 	test_parse("z2x2+2z3x2*y-2*x2*yz3-z2y2","-z2*y2+z2*x2");
 }
 
-void test_arithmetic(const std::string& result, const polynomial<int, int>& value)
+void test_arithmetic(const std::string& result, const polynomial_test& value)
 {
 	assert(value.normalized(), "parsed not normalized %s", result.c_str());
 	const std::string s = value.string();
@@ -64,11 +79,11 @@ void test_arithmetic(const std::string& result, const polynomial<int, int>& valu
 
 void test_arithmetic()
 {
-	const polynomial<int, int> x('x'), y('y');
-	polynomial<int, int> r;
+	const polynomial_test x('x'), y('y');
+	polynomial_test r;
 	std::string s;
 
-	test_arithmetic("x+1", x + 1);
+	test_arithmetic("x+1", x +  1);
 	test_arithmetic("-2*x+3", -2 * x + 3);
 	test_arithmetic("x+5", 5 + x);
 	test_arithmetic("-3*x-3", -3 - 3 * x);
@@ -86,52 +101,57 @@ void test_arithmetic()
 	test_arithmetic("y2+3*y*x+x2+y+x+1", ((x + y) ^ 2) + (x + 1) * (y + 1));
 }
 
+polynomial_test random_polynomial(rand_quick& rand_quick, int terms_count, int variables_count, int total_max, int coefficient_max)
+{
+	polynomial_test result;
+	for (int c = terms_count;c > 0;--c)
+	{
+		coefficient_test term = coefficient_test(rand_quick(-coefficient_max, coefficient_max));
+		int total = rand_quick(1, total_max);
+		while (total > 0)
+		{
+			int exponent = rand_quick(1, total);
+			char variable = char('a' + rand_quick(0, variables_count - 1));
+			term.exponents.push_back(polynomial_exponent<int>(variable, exponent));
+			total -= exponent;
+		}
+		result.push_back(term);
+	}
+	result.normalize(true);
+	return result;
+}
+
 void test_compose(uint seed, int variables_max, int terms_max, int total_max, int coefficient_max)
 {
 	rand_quick rand_quick(seed);
 	int variables_count = rand_quick(1, variables_max);
 	int terms_count = rand_quick(1, terms_max);
-	auto generate = [=, &rand_quick]()->polynomial<int, int>
+	auto generate = [=, &rand_quick]()->polynomial_test
 	{
-		polynomial<int, int> result;
-		for (int c = terms_count;c > 0;--c)
-		{
-			polynomial_coefficient<int, int> term = rand_quick(-coefficient_max, coefficient_max);
-			int total = rand_quick(1, total_max);
-			while (total >0 )
-			{
-				int exponent = rand_quick(1, total);
-				char variable = char('a' + rand_quick(0, variables_count-1));
-				term.exponents.push_back(polynomial_exponent<int>(variable,exponent));
-				total -= exponent;
-			}
-			result.push_back(term);
-		}
-		result.normalize(true);
-		return result;
+		return random_polynomial(rand_quick, terms_count, variables_count, total_max, coefficient_max);
 	};
 
 	std::vector<char> variables(variables_count);
 	for (char i = 0;i < variables_count;++i)
 		variables[i] = 'a' + i;
-	polynomial<int, int> compose_function = generate();
+	polynomial_test compose_function = generate();
 
-	std::vector<polynomial<int, int>> argsV;
+	std::vector<polynomial_test> argsV;
 	for (int i = 0;i < variables_count;++i)
 		argsV.emplace_back(generate());
 
-	std::vector<polynomial<int, int>> numsV;
+	std::vector<polynomial_test> numsV;
 	for (int i = 0;i < variables_count;++i)
 		numsV.emplace_back(rand_quick(-coefficient_max, coefficient_max));
 
-	std::vector<polynomial<int, int>> evalsV;
+	std::vector<polynomial_test> evalsV;
 	for (int i = 0;i < variables_count;++i)
 		evalsV.emplace_back(argsV[i](variables, numsV));
 	
 
-	polynomial<int, int> compose_result = compose_function(variables, argsV);
-	polynomial<int, int> compose_evaluated = compose_result(variables, numsV);
-	polynomial<int, int> function_evaluated = compose_function(variables, evalsV);
+	polynomial_test compose_result = compose_function(variables, argsV);
+	polynomial_test compose_evaluated = compose_result(variables, numsV);
+	polynomial_test function_evaluated = compose_function(variables, evalsV);
 	if (false)
 	{
 		std::cout << "compose_function: " << compose_function.string() << std::endl;
@@ -157,41 +177,26 @@ void test_applicator(uint seed, int variables_max, int terms_max, int total_max,
 	rand_quick rand_quick(seed);
 	int variables_count = rand_quick(1, variables_max);
 	int terms_count = rand_quick(1, terms_max);
-	auto generate = [=, &rand_quick]()->polynomial<int, int>
-		{
-			polynomial<int, int> result;
-			for (int c = terms_count;c > 0;--c)
-			{
-				polynomial_coefficient<int, int> term = rand_quick(-coefficient_max, coefficient_max);
-				int total = rand_quick(1, total_max);
-				while (total > 0)
-				{
-					int exponent = rand_quick(1, total);
-					char variable = char('a' + rand_quick(0, variables_count - 1));
-					term.exponents.push_back(polynomial_exponent<int>(variable, exponent));
-					total -= exponent;
-				}
-				result.push_back(term);
-			}
-			result.normalize(true);
-			return result;
-		};
+	auto generate = [=, &rand_quick]()->polynomial_test
+	{
+		return random_polynomial(rand_quick, terms_count, variables_count, total_max, coefficient_max);
+	};
 
-	polynomials_anihilator<int, int> anihilator;
+	anihilator_test anihilator;
 	std::vector<char> variables(variables_count);
 	for (char i = 0;i < variables_count;++i)
 		anihilator.arg_variables.push_back('a' + i);
 
-	std::vector<polynomial<int, int>> argsV;
+	std::vector<polynomial_test> argsV;
 	for (int i = 0;i < variables_count;++i)
 		anihilator.arg_polynomials.push_back(generate());
 
 	anihilator.init();
 	for (int c = 0;c < repeat_count;++c)
 	{
-		polynomial<int, int> compose_function = generate();
-		polynomial<int, int> compose_1_result = compose_function(anihilator.arg_variables, anihilator.arg_polynomials);
-		polynomial<int, int> compose_2_result = anihilator.apply(compose_function);
+		polynomial_test compose_function = generate();
+		polynomial_test compose_1_result = compose_function(anihilator.arg_variables, anihilator.arg_polynomials);
+		polynomial_test compose_2_result = anihilator.apply(compose_function);
 		assert(compose_1_result == compose_2_result, 
 			"test_anihilator failed seed=%u, variables_max=%d, terms_max=%d, total_max=%d, coefficient_max=%d",
 			seed, variables_max, terms_max, total_max, coefficient_max
@@ -240,8 +245,8 @@ int count_exponents(int variables_count, int total_max)
 
 void test_exponents(int variables_count, int total_max)
 {
-	std::vector<polynomial<int, int>> testV;
-	polynomial<int, int> testP = 1;
+	std::vector<polynomial_test> testV;
+	polynomial_test testP = 1;
 	for (char variable = 'a' + variables_count;variable > 'a'; --variable)
 		testP.front().exponents.emplace_back(variable, 0);
 	for (;testP.front().total() <= total_max; ++testP.front().exponents)
@@ -271,11 +276,35 @@ void test_exponents()
 			test_exponents(variables_count, total_max);
 }
 
+void test_anihilate(uint seed, int variables_max, int terms_max, int total_max, int coefficient_max)
+{
+	rand_quick rand_quick(seed);
+	int variables_count = rand_quick(1, variables_max);
+	int terms_count = rand_quick(1, terms_max);
+	anihilator_test polynomials_anihilator;
+	auto generate = [=, &rand_quick]()->polynomial_test
+	{
+		return random_polynomial(rand_quick, terms_count, variables_count, total_max, coefficient_max);
+	};
+	std::generate_n(std::back_inserter(polynomials_anihilator.arg_polynomials), variables_max + 1,generate);	
+	assert(polynomials_anihilator.anihilate(), "xxx01");
+	assert(polynomials_anihilator.res_test(), "xxx02");
+}
 
 void test_anihilate()
 {
-	polynomial<int, int> x('x');
-	polynomials_anihilator<int, int> polynomials_anihilator;
+	uint seed = rand_quick_seed;
+	for (int c = 0;c < 1000;++c)
+	{
+		test_anihilate(rand_quick_seed+c, 1, 5, 10, 10);
+	}
+}
+
+void test_anihilate01()
+{
+	polynomial_test x('x');
+	anihilator_test polynomials_anihilator;
+	
 	//polynomials_anihilator.arg_polynomials = { 2 * x , 3 * x };
 	//polynomials_anihilator.arg_polynomials = { 2 * (x^3)+x , 3 * x^2 };
 	polynomials_anihilator.arg_polynomials = { 2 * (x ^ 3) + x , 3 * (x ^ 4)+3*(x^2)};

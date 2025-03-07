@@ -358,6 +358,11 @@ public:
         if (coefficient != 0)
             this->emplace_back(coefficient);
     };
+    polynomial(int coefficient)
+    {
+        if (coefficient != 0)
+            this->emplace_back(coefficient);
+    };
     polynomial(char variable)
     {
         this->emplace_back(1, variable, 1);
@@ -671,28 +676,29 @@ public:
         }
         for (auto & coefficient : *this)
         {
+            int coefficient_int = coefficient.coefficient;
             if (coefficient.exponents.empty())
             {
-                if (stream.tellp() > 0 && coefficient.coefficient > 0)
+                if (stream.tellp() > 0 && coefficient_int > 0)
                     stream << "+";
-                stream << coefficient.coefficient;
+                stream << coefficient_int;
             }
             else
             {
-                if (coefficient.coefficient == 1)
+                if (coefficient_int == 1)
                 {
                     if (stream.tellp() > 0)
                         stream << "+";
                 }
-                else if (coefficient.coefficient == -1)
+                else if (coefficient_int == -1)
                 {
                     stream << "-";
                 }
                 else
                 {
-                    if (stream.tellp() > 0 && coefficient.coefficient > 0)
+                    if (stream.tellp() > 0 && coefficient_int > 0)
                         stream << "+";
-                    stream << coefficient.coefficient << "*";;
+                    stream << coefficient_int << "*";;
                 }
                 for (auto it = coefficient.exponents.begin(), itE = coefficient.exponents.end();;)
                 {
@@ -716,7 +722,7 @@ public:
 
         int coefficient = 0, exponent;
         char variable;
-        polynomial_coefficient<exponent_number, coefficient_number> polynomial_coefficient = 0;
+        polynomial_coefficient<exponent_number, coefficient_number> polynomial_coefficient = coefficient_number(0);
 
         const char* p = string.c_str();
         auto skip = [](const char*& p) { while (*p && isspace(*p)) ++p; return *p != 0;};
@@ -753,7 +759,7 @@ public:
                 {
                     coefficient *= strtol(p, const_cast<char**>(&p), 10);
                 }
-                polynomial_coefficient = coefficient;
+                polynomial_coefficient = coefficient_number(coefficient);
             }
             else if (*p == '+' || *p == '-')
             {
@@ -804,17 +810,43 @@ polynomial<exponent_number, coefficient_number> operator+(coefficient_number lef
     return right + left;
 }
 
+#define INT_OPR
+#ifdef INT_OPR
+template<class exponent_number, class coefficient_number>
+polynomial<exponent_number, coefficient_number> operator+(int left, const polynomial<exponent_number, coefficient_number>& right)
+{
+    return right + left;
+}
+#endif
+
+
 template<class exponent_number, class coefficient_number>
 polynomial<exponent_number, coefficient_number> operator-(coefficient_number left, const polynomial<exponent_number, coefficient_number>& right)
 {
     return -right + left;
 }
 
+#ifdef INT_OPR
+template<class exponent_number, class coefficient_number>
+polynomial<exponent_number, coefficient_number> operator-(int left, const polynomial<exponent_number, coefficient_number>& right)
+{
+    return -right + left;
+}
+#endif
+
 template<class exponent_number, class coefficient_number>
 polynomial<exponent_number, coefficient_number> operator*(coefficient_number left, const polynomial<exponent_number, coefficient_number>& right)
 {
     return right * left;
 }
+
+#ifdef INT_OPR
+template<class exponent_number, class coefficient_number>
+polynomial<exponent_number, coefficient_number> operator*(int left, const polynomial<exponent_number, coefficient_number>& right)
+{
+    return right * left;
+}
+#endif
 
 template <class exponent_number, class coefficient_number>
 class polynomials_applicator
@@ -941,7 +973,12 @@ public:
             evaluated_function = this->apply(compose_function);
             if (!res_test(compose_function, evaluated_function))
                 return false;
-            
+            if (evaluated_function.empty())
+            {
+                res_polynomial = compose_function;
+                return true;
+            }
+
             for (;;)
             {
                 auto it = cache_compositions.find(evaluated_function.front().exponents);
@@ -997,7 +1034,7 @@ private:
             if (thisI->exponents == thatI->exponents)
             {
                 coefficient_number coefficient = thisI->coefficient * thisC - thatI->coefficient * thatC;
-                if (coefficient !=0)
+                if (coefficient != 0)
                     result.emplace_back(coefficient, thisI->exponents);
                 ++thisI;
                 ++thatI;

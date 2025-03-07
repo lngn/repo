@@ -132,6 +132,7 @@
     <ClCompile Include="polynomials-tests.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="coefficients.h" />
     <ClInclude Include="polynomial.h" />
     <ClInclude Include="rand_quick.h" />
   </ItemGroup>
