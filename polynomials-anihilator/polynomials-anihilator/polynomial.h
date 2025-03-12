@@ -804,49 +804,43 @@ public:
     }
 };
 
+
 template<class exponent_number, class coefficient_number>
-polynomial<exponent_number, coefficient_number> operator+(coefficient_number left, const polynomial<exponent_number, coefficient_number>& right)
+polynomial<exponent_number, coefficient_number> operator+(const polynomial<exponent_number, coefficient_number>& left, int right)
 {
-    return right + left;
+    return left + polynomial<exponent_number, coefficient_number>(right);
 }
 
-#define INT_OPR
-#ifdef INT_OPR
 template<class exponent_number, class coefficient_number>
 polynomial<exponent_number, coefficient_number> operator+(int left, const polynomial<exponent_number, coefficient_number>& right)
 {
-    return right + left;
+    return right + polynomial<exponent_number, coefficient_number>(left);
 }
-#endif
-
 
 template<class exponent_number, class coefficient_number>
-polynomial<exponent_number, coefficient_number> operator-(coefficient_number left, const polynomial<exponent_number, coefficient_number>& right)
+polynomial<exponent_number, coefficient_number> operator-(const polynomial<exponent_number, coefficient_number>& left, int right)
 {
-    return -right + left;
+    return left - polynomial<exponent_number, coefficient_number>(right);
 }
 
-#ifdef INT_OPR
 template<class exponent_number, class coefficient_number>
 polynomial<exponent_number, coefficient_number> operator-(int left, const polynomial<exponent_number, coefficient_number>& right)
 {
-    return -right + left;
+    return -right + polynomial<exponent_number, coefficient_number>(left);
 }
-#endif
 
 template<class exponent_number, class coefficient_number>
-polynomial<exponent_number, coefficient_number> operator*(coefficient_number left, const polynomial<exponent_number, coefficient_number>& right)
+polynomial<exponent_number, coefficient_number> operator*(const polynomial<exponent_number, coefficient_number>& left, int right)
 {
-    return right * left;
+    return left * polynomial<exponent_number, coefficient_number>(right);
 }
 
-#ifdef INT_OPR
 template<class exponent_number, class coefficient_number>
 polynomial<exponent_number, coefficient_number> operator*(int left, const polynomial<exponent_number, coefficient_number>& right)
 {
-    return right * left;
+    return right * polynomial<exponent_number, coefficient_number>(left);
 }
-#endif
+
 
 template <class exponent_number, class coefficient_number>
 class polynomials_applicator

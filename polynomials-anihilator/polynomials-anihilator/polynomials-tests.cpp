@@ -1,6 +1,7 @@
 
 #include <tuple>
 #include <cstdarg>
+#include <ctime>
 #include <vector>
 #include "rand_quick.h"
 #include "coefficients.h"
@@ -42,7 +43,7 @@ void test_parse(const std::string& istring, const std::string& ostring)
 
 void test_parse()
 {
-	coefficient139 c(-1);
+	std::cout << "test_parse";
 
 	test_parse("0", "0");
 	test_parse(" 0 ", "0");
@@ -68,6 +69,8 @@ void test_parse()
 	test_parse("3*x3y2+ x2+ y2 - 3x3y2 -y2 -x2", "0");
 	test_parse("3*x3y2+ x2+ y2 - 2x3y2 -2y2 -x2", "y2*x3-y2");
 	test_parse("z2x2+2z3x2*y-2*x2*yz3-z2y2","-z2*y2+z2*x2");
+
+	std::cout << std::endl;
 }
 
 void test_arithmetic(const std::string& result, const polynomial_test& value)
@@ -79,6 +82,8 @@ void test_arithmetic(const std::string& result, const polynomial_test& value)
 
 void test_arithmetic()
 {
+	std::cout << "test_arithmetic";
+
 	const polynomial_test x('x'), y('y');
 	polynomial_test r;
 	std::string s;
@@ -99,6 +104,8 @@ void test_arithmetic()
 	test_arithmetic("x5", x ^ 5);
 	test_arithmetic("x3+3*x2+3*x+1", (x + 1) ^ 3);
 	test_arithmetic("y2+3*y*x+x2+y+x+1", ((x + y) ^ 2) + (x + 1) * (y + 1));
+
+	std::cout << std::endl;
 }
 
 polynomial_test random_polynomial(rand_quick& rand_quick, int terms_count, int variables_count, int total_max, int coefficient_max)
@@ -206,29 +213,54 @@ void test_applicator(uint seed, int variables_max, int terms_max, int total_max,
 
 void test_applicator()
 {
+	int count = 100;
 	uint seed = rand_quick_seed;
-	for (int c = 10;c > 0;--c)
+	std::cout << "test_applicator " << count << " random cases";
+	time_t t = time(nullptr);
+	for (int c = 0;c < count;++c)
 	{
+		if (time(nullptr) - t > 3)
+		{
+			std::cout << " " << c;
+			t = time(nullptr);
+		}
 		test_applicator(++seed, 3, 3, 7, 10, 100);
 	}
+	std::cout << std::endl;
 }
 
 
 void test_compose()
-{
+{	
+	int count = 1000;
 	uint seed = rand_quick_seed;
-	for (int c = 1000;c > 0;--c)
+	std::cout << "test_compose " << count << " random cases";
+	time_t t = time(nullptr);
+	for (int c = 0;c < count;++c)
 	{
+		if (time(nullptr) - t > 3)
+		{
+			std::cout << " " << c;
+			t = time(nullptr);
+		}
 		test_compose(++seed, 3, 5, 5, 5);
 	}
-	for (int c = 10;c > 0;--c)
+	std::cout << std::endl;
+
+	count = 10;
+	seed = rand_quick_seed;
+	std::cout << "test_compose " << count << " random bigger cases";
+	t = time(nullptr);
+	for (int c = 0;c < count;++c)
 	{
-		test_compose(++seed, 3, 10, 5, 100);
+		if (time(nullptr) - t > 3)
+		{
+			std::cout << " " << c;
+			t = time(nullptr);
+		}
+		test_compose(++seed, 3, 10, 10, 100);
 	}
-	for (int c = 10;c > 0;--c)
-	{
-		test_compose(++seed, 3, 5, 10, 100);
-	}
+	std::cout << std::endl;
 }
 
 
@@ -271,9 +303,11 @@ void test_exponents(int variables_count, int total_max)
 }
 void test_exponents()
 {
+	std::cout << "test_exponents";
 	for (int variables_count = 1;variables_count <= 5; ++variables_count)
 		for (int total_max = 1;total_max <= 5; ++total_max)
 			test_exponents(variables_count, total_max);
+	std::cout << std::endl;
 }
 
 void test_anihilate(uint seed, int variables_max, int terms_max, int total_max, int coefficient_max)
@@ -286,18 +320,30 @@ void test_anihilate(uint seed, int variables_max, int terms_max, int total_max, 
 	{
 		return random_polynomial(rand_quick, terms_count, variables_count, total_max, coefficient_max);
 	};
-	std::generate_n(std::back_inserter(polynomials_anihilator.arg_polynomials), variables_max + 1,generate);	
-	assert(polynomials_anihilator.anihilate(), "xxx01");
-	assert(polynomials_anihilator.res_test(), "xxx02");
+	std::generate_n(std::back_inserter(polynomials_anihilator.arg_polynomials), variables_max + 1, generate);
+
+	assert(polynomials_anihilator.anihilate() && polynomials_anihilator.res_test(),
+		"test_anihilate failed seed=%u, variables_max=%d, terms_max=%d, total_max=%d, coefficient_max=%d",
+		seed, variables_max, terms_max, total_max, coefficient_max
+	);
 }
 
 void test_anihilate()
 {
+	const int count = 1000;
+	std::cout << "test_anihilate " << count << " random cases";
+	auto t = time(nullptr);
 	uint seed = rand_quick_seed;
-	for (int c = 0;c < 1000;++c)
+	for (int c = 0;c < count;++c)
 	{
+		if (time(nullptr) - t> 3)
+		{
+			std::cout << " " << c;
+			t = time(nullptr);
+		}
 		test_anihilate(rand_quick_seed+c, 1, 5, 10, 10);
 	}
+	std::cout << std::endl;
 }
 
 void test_anihilate01()
