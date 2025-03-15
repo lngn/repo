@@ -164,6 +164,13 @@ public:
         return false;
     }
     
+    /*
+    * Implementing incrementation for ordering terms of polynomial that means powers x^n*y^m* ...
+    Ordering might be reduced to ordering finite sequence (say 4 to show) of natural numbers a=[a1, a2, a3, a4]. 
+    This uses here composed ordering where sum of elements a1+a2+a3+a4 decides first and next lexicographical order. 
+    Noticing that for sequence with the same sum, sequence with the same prefix go in block we need find last incremental suffix.
+    Suffix a,0,.. is greatest and 0,0,a lowest.
+    */
     polynomial_exponents<exponent_number>& operator++()
     {
         auto itB = this->begin(), itL = this->end();
@@ -194,6 +201,7 @@ public:
         return *this;
     }
 
+    // see note for operator++()
     polynomial_exponents<exponent_number>& operator--()
     {
         auto itB = this->begin(), itL = this->end();
@@ -269,6 +277,7 @@ public:
     void normalize() { exponents.normalize(); }
     bool normalized() const { return coefficient !=0 && exponents.normalized(); }
     int total() const { return exponents.total();  }
+    bool overflow() const { return coefficient.overflow();  }
 
     bool operator<(const polynomial_coefficient& arg) const
     {
@@ -445,6 +454,11 @@ public:
     }
 
     int total() const { return this->empty() ? 0 : this->front().total(); }
+
+    bool overflow() const
+    {
+        return std::any_of(this->begin(), this->end(), [](const auto& coefficient) { return coefficient.overflow(); });
+    }
 
     bool operator==(const polynomial<exponent_number, coefficient_number>& that) const
     {
@@ -841,7 +855,8 @@ polynomial<exponent_number, coefficient_number> operator*(int left, const polyno
     return right * polynomial<exponent_number, coefficient_number>(left);
 }
 
-
+// calculate application (composition) to list arg_polynomials another polynomial or more useful to many another polynomials. 
+// It uses cache of powers of polynomials from list arg_polynomials
 template <class exponent_number, class coefficient_number>
 class polynomials_applicator
 {
@@ -856,7 +871,7 @@ public:
             for (char i = 0;i < arg_polynomials.size();++i)
                 arg_variables.push_back('a' + i);
         }
-        std::sort(arg_variables.begin(), arg_variables.end(), [](auto ala, auto bob) { return bob < ala;});
+        //std::sort(arg_variables.begin(), arg_variables.end(), [](auto ala, auto bob) { return bob < ala;});
         cache_powers.clear();
         for (int i = 0;i < arg_polynomials.size();++i)
             cache_powers.push_back({1, arg_polynomials[i]});
@@ -914,6 +929,7 @@ private:
     }
 };
 
+// Calculate annihilator simple greedy checking succesive exponents of polynomials ( eg. f1(x)^m * f2(x)^n ) to eliminates succesively occured powers of x.
 template <class exponent_number, class coefficient_number>
 class polynomials_anihilator: public polynomials_applicator<exponent_number, coefficient_number>
 {
@@ -1016,6 +1032,7 @@ private:
     };
     std::unordered_map<polynomial_exponents<exponent_number>,composition> cache_compositions;
 
+    // calculate thisP*thisC - thatP*thatC but a bit economic way
     void reduct_exponents(polynomial<exponent_number, coefficient_number> & result, 
         const polynomial<exponent_number, coefficient_number> thisP, coefficient_number thisC,
         const polynomial<exponent_number, coefficient_number> thatP, coefficient_number thatC)
@@ -1054,7 +1071,5 @@ private:
             result.emplace_back(-thatI->coefficient * thatC, thatI->exponents);
             ++thatI;
         }
-        if (result != thisP * thisC - thatP * thatC)
-            throw 0;
     }
 };
