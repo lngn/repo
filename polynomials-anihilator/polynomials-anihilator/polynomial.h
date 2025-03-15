@@ -164,6 +164,13 @@ public:
         return false;
     }
     
+    /*
+    * Implementing incrementation for ordering terms of polynomial that means powers x^n*y^m* ...
+    Ordering might be reduced to ordering finite sequence (say 4 to show) of natural numbers a=[a1, a2, a3, a4]. 
+    This uses here composed ordering where sum of elements a1+a2+a3+a4 decides first and next lexicographical order. 
+    Noticing that for sequence with the same sum, sequence with the same prefix go in block we need find last incremental suffix.
+    Suffix a,0,.. is greatest and 0,0,a lowest.
+    */
     polynomial_exponents<exponent_number>& operator++()
     {
         auto itB = this->begin(), itL = this->end();
@@ -194,6 +201,7 @@ public:
         return *this;
     }
 
+    // see note for operator++()
     polynomial_exponents<exponent_number>& operator--()
     {
         auto itB = this->begin(), itL = this->end();
@@ -269,6 +277,7 @@ public:
     void normalize() { exponents.normalize(); }
     bool normalized() const { return coefficient !=0 && exponents.normalized(); }
     int total() const { return exponents.total();  }
+    bool overflow() const { return coefficient.overflow();  }
 
     bool operator<(const polynomial_coefficient& arg) const
     {
@@ -358,6 +367,11 @@ public:
         if (coefficient != 0)
             this->emplace_back(coefficient);
     };
+    polynomial(int coefficient)
+    {
+        if (coefficient != 0)
+            this->emplace_back(coefficient);
+    };
     polynomial(char variable)
     {
         this->emplace_back(1, variable, 1);
@@ -440,6 +454,11 @@ public:
     }
 
     int total() const { return this->empty() ? 0 : this->front().total(); }
+
+    bool overflow() const
+    {
+        return std::any_of(this->begin(), this->end(), [](const auto& coefficient) { return coefficient.overflow(); });
+    }
 
     bool operator==(const polynomial<exponent_number, coefficient_number>& that) const
     {
@@ -671,28 +690,29 @@ public:
         }
         for (auto & coefficient : *this)
         {
+            int coefficient_int = coefficient.coefficient;
             if (coefficient.exponents.empty())
             {
-                if (stream.tellp() > 0 && coefficient.coefficient > 0)
+                if (stream.tellp() > 0 && coefficient_int > 0)
                     stream << "+";
-                stream << coefficient.coefficient;
+                stream << coefficient_int;
             }
             else
             {
-                if (coefficient.coefficient == 1)
+                if (coefficient_int == 1)
                 {
                     if (stream.tellp() > 0)
                         stream << "+";
                 }
-                else if (coefficient.coefficient == -1)
+                else if (coefficient_int == -1)
                 {
                     stream << "-";
                 }
                 else
                 {
-                    if (stream.tellp() > 0 && coefficient.coefficient > 0)
+                    if (stream.tellp() > 0 && coefficient_int > 0)
                         stream << "+";
-                    stream << coefficient.coefficient << "*";;
+                    stream << coefficient_int << "*";;
                 }
                 for (auto it = coefficient.exponents.begin(), itE = coefficient.exponents.end();;)
                 {
@@ -716,7 +736,7 @@ public:
 
         int coefficient = 0, exponent;
         char variable;
-        polynomial_coefficient<exponent_number, coefficient_number> polynomial_coefficient = 0;
+        polynomial_coefficient<exponent_number, coefficient_number> polynomial_coefficient = coefficient_number(0);
 
         const char* p = string.c_str();
         auto skip = [](const char*& p) { while (*p && isspace(*p)) ++p; return *p != 0;};
@@ -753,7 +773,7 @@ public:
                 {
                     coefficient *= strtol(p, const_cast<char**>(&p), 10);
                 }
-                polynomial_coefficient = coefficient;
+                polynomial_coefficient = coefficient_number(coefficient);
             }
             else if (*p == '+' || *p == '-')
             {
@@ -798,24 +818,45 @@ public:
     }
 };
 
+
 template<class exponent_number, class coefficient_number>
-polynomial<exponent_number, coefficient_number> operator+(coefficient_number left, const polynomial<exponent_number, coefficient_number>& right)
+polynomial<exponent_number, coefficient_number> operator+(const polynomial<exponent_number, coefficient_number>& left, int right)
 {
-    return right + left;
+    return left + polynomial<exponent_number, coefficient_number>(right);
 }
 
 template<class exponent_number, class coefficient_number>
-polynomial<exponent_number, coefficient_number> operator-(coefficient_number left, const polynomial<exponent_number, coefficient_number>& right)
+polynomial<exponent_number, coefficient_number> operator+(int left, const polynomial<exponent_number, coefficient_number>& right)
 {
-    return -right + left;
+    return right + polynomial<exponent_number, coefficient_number>(left);
 }
 
 template<class exponent_number, class coefficient_number>
-polynomial<exponent_number, coefficient_number> operator*(coefficient_number left, const polynomial<exponent_number, coefficient_number>& right)
+polynomial<exponent_number, coefficient_number> operator-(const polynomial<exponent_number, coefficient_number>& left, int right)
 {
-    return right * left;
+    return left - polynomial<exponent_number, coefficient_number>(right);
 }
 
+template<class exponent_number, class coefficient_number>
+polynomial<exponent_number, coefficient_number> operator-(int left, const polynomial<exponent_number, coefficient_number>& right)
+{
+    return -right + polynomial<exponent_number, coefficient_number>(left);
+}
+
+template<class exponent_number, class coefficient_number>
+polynomial<exponent_number, coefficient_number> operator*(const polynomial<exponent_number, coefficient_number>& left, int right)
+{
+    return left * polynomial<exponent_number, coefficient_number>(right);
+}
+
+template<class exponent_number, class coefficient_number>
+polynomial<exponent_number, coefficient_number> operator*(int left, const polynomial<exponent_number, coefficient_number>& right)
+{
+    return right * polynomial<exponent_number, coefficient_number>(left);
+}
+
+// calculate application (composition) to list arg_polynomials another polynomial or more useful to many another polynomials. 
+// It uses cache of powers of polynomials from list arg_polynomials
 template <class exponent_number, class coefficient_number>
 class polynomials_applicator
 {
@@ -830,7 +871,7 @@ public:
             for (char i = 0;i < arg_polynomials.size();++i)
                 arg_variables.push_back('a' + i);
         }
-        std::sort(arg_variables.begin(), arg_variables.end(), [](auto ala, auto bob) { return bob < ala;});
+        //std::sort(arg_variables.begin(), arg_variables.end(), [](auto ala, auto bob) { return bob < ala;});
         cache_powers.clear();
         for (int i = 0;i < arg_polynomials.size();++i)
             cache_powers.push_back({1, arg_polynomials[i]});
@@ -888,6 +929,7 @@ private:
     }
 };
 
+// Calculate annihilator simple greedy checking succesive exponents of polynomials ( eg. f1(x)^m * f2(x)^n ) to eliminates succesively occured powers of x.
 template <class exponent_number, class coefficient_number>
 class polynomials_anihilator: public polynomials_applicator<exponent_number, coefficient_number>
 {
@@ -941,7 +983,12 @@ public:
             evaluated_function = this->apply(compose_function);
             if (!res_test(compose_function, evaluated_function))
                 return false;
-            
+            if (evaluated_function.empty())
+            {
+                res_polynomial = compose_function;
+                return true;
+            }
+
             for (;;)
             {
                 auto it = cache_compositions.find(evaluated_function.front().exponents);
@@ -985,6 +1032,7 @@ private:
     };
     std::unordered_map<polynomial_exponents<exponent_number>,composition> cache_compositions;
 
+    // calculate thisP*thisC - thatP*thatC but a bit economic way
     void reduct_exponents(polynomial<exponent_number, coefficient_number> & result, 
         const polynomial<exponent_number, coefficient_number> thisP, coefficient_number thisC,
         const polynomial<exponent_number, coefficient_number> thatP, coefficient_number thatC)
@@ -997,7 +1045,7 @@ private:
             if (thisI->exponents == thatI->exponents)
             {
                 coefficient_number coefficient = thisI->coefficient * thisC - thatI->coefficient * thatC;
-                if (coefficient !=0)
+                if (coefficient != 0)
                     result.emplace_back(coefficient, thisI->exponents);
                 ++thisI;
                 ++thatI;
@@ -1023,7 +1071,5 @@ private:
             result.emplace_back(-thatI->coefficient * thatC, thatI->exponents);
             ++thatI;
         }
-        if (result != thisP * thisC - thatP * thatC)
-            throw 0;
     }
 };
